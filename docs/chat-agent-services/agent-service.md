@@ -306,6 +306,8 @@ This architecture ensures Thread Manager coordinates all chat interactions while
 
 ### REST APIs (via Gateway)
 
+**Note**: The Agent Service APIs manage agent configurations and book instance references only. All book credential management is handled through BDK Library APIs. To create the book instances referenced in these examples, use the BDK Library APIs first (see [BDK documentation](../platform-services/bdk.md)).
+
 #### Agent Management
 ```http
 POST /api/v1/agents
@@ -338,23 +340,15 @@ Response: 201 Created
     "name": "customer-support-agent",
     "books": [
       {
-        "book_id": "kb-customer-support",
-        "provider": "s3",
-        "credentials": {
-          "bucket": "voyager-kb",
-          "region": "us-west-2"
-          // credentials are masked in response
-        },
+        "book_instance_id": "acme-kb-customer-support",
+        "book_name": "customer-support-book",
+        "customer_namespace": "customer-acme",
         "available_functions": ["search_knowledge_base", "get_article", "list_categories"]
       },
       {
-        "book_id": "faq-database",
-        "provider": "atlas",
-        "credentials": {
-          "database": "faq",
-          "collection": "questions"
-          // sensitive credentials masked
-        },
+        "book_instance_id": "acme-faq-database",
+        "book_name": "faq-database-book", 
+        "customer_namespace": "customer-acme",
         "available_functions": ["search_faq", "get_question_by_id", "list_topics"]
       }
     ],
@@ -374,13 +368,10 @@ Response: 200 OK
     "name": "customer-support-agent",
     "books": [
       {
-        "book_id": "kb-customer-support",
-        "provider": "s3",
-        "credentials": {
-          "bucket": "voyager-kb",
-          "region": "us-west-2"
-          // credentials masked for security
-        }
+        "book_instance_id": "acme-kb-customer-support",
+        "book_name": "customer-support-book",
+        "customer_namespace": "customer-acme",
+        "available_functions": ["search_knowledge_base", "get_article", "list_categories"]
       }
     ],
     "restrictions_prompt": "You are a helpful customer support agent...",
@@ -399,14 +390,10 @@ Content-Type: application/json
     "name": "customer-support-agent",
     "books": [
       {
-        "book_id": "kb-customer-support-v2",
-        "provider": "s3",
-        "credentials": {
-          "bucket": "voyager-kb-v2",
-          "region": "us-west-2",
-          "access_key_id": "AKIA...",
-          "secret_access_key": "new_encrypted_secret"
-        }
+        "book_instance_id": "acme-kb-customer-support-v2",
+        "book_name": "customer-support-book-v2",
+        "customer_namespace": "customer-acme",
+        "available_functions": ["search_knowledge_base", "get_article", "list_categories", "create_ticket"]
       }
     ],
     "restrictions_prompt": "Updated prompt with new guidelines..."
@@ -419,12 +406,10 @@ Response: 200 OK
     "name": "customer-support-agent",
     "books": [
       {
-        "book_id": "kb-customer-support-v2",
-        "provider": "s3",
-        "credentials": {
-          "bucket": "voyager-kb-v2",
-          "region": "us-west-2"
-        }
+        "book_instance_id": "acme-kb-customer-support-v2",
+        "book_name": "customer-support-book-v2",
+        "customer_namespace": "customer-acme",
+        "available_functions": ["search_knowledge_base", "get_article", "list_categories", "create_ticket"]
       }
     ],
     "restrictions_prompt": "Updated prompt with new guidelines...",
@@ -442,14 +427,26 @@ Response: 200 OK
   "agents": [
     {
       "name": "customer-support-agent",
-      "books": [{"book_id": "kb-customer-support", "provider": "s3"}],
+      "books": [
+        {
+          "book_instance_id": "acme-kb-customer-support",
+          "book_name": "customer-support-book",
+          "customer_namespace": "customer-acme"
+        }
+      ],
       "restrictions_prompt": "You are a helpful customer support agent...",
       "created_at_ms": 1699123456789,
       "updated_at_ms": 1699123456789
     },
     {
       "name": "technical-support-agent",
-      "books": [{"book_id": "technical-docs", "provider": "atlas"}],
+      "books": [
+        {
+          "book_instance_id": "acme-technical-docs",
+          "book_name": "technical-docs-book",
+          "customer_namespace": "customer-acme"
+        }
+      ],
       "restrictions_prompt": "You are a technical support specialist...",
       "created_at_ms": 1699123456800,
       "updated_at_ms": 1699123456800
@@ -488,6 +485,38 @@ Response: 201 Created
   }
 }
 ```
+
+#### Complete Agent Setup Workflow
+
+To create an agent that uses book instances, follow this workflow:
+
+1. **First, create book instances via BDK Library**:
+```http
+POST /api/v1/books/{book_id}/instances
+# (See BDK documentation for complete API)
+```
+
+2. **Then, create agent referencing those book instances**:
+```http
+POST /api/v1/agents
+{
+  "agent": {
+    "name": "my-agent",
+    "books": [
+      {
+        "book_instance_id": "customer-book-instance-123",
+        "book_name": "customer-support-book",
+        "customer_namespace": "customer-acme",
+        "available_functions": ["search_kb", "create_ticket"]
+      }
+    ]
+  }
+}
+```
+
+3. **Agent Service validates book instance exists through BDK**
+4. **When agent generates SPy code, it calls book functions**
+5. **Jarvis executes SPy code using BDK-managed credentials**
 
 ## Database Schema
 
