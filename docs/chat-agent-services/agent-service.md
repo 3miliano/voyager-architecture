@@ -6,7 +6,7 @@
 
 ## Overview
 
-Agent Service is a core service that provides comprehensive agent management capabilities for the Voyager platform's conversational AI ecosystem. It handles agent creation, configuration, storage, and lifecycle management, serving as the central registry for all AI agents and their associated data sources and capabilities.
+Agent Service is a core service that provides comprehensive agent management capabilities for the Voyager platform's conversational AI ecosystem. It handles agent creation, configuration, storage, and lifecycle management, serving as the central registry for all AI agents and their book access configurations. The service generates mini_processes with embedded SPy code that users can approve for execution through the standard Jeeves → Jarvis flow.
 
 ## Responsibilities
 
@@ -16,23 +16,25 @@ Agent Service is a core service that provides comprehensive agent management cap
 - **Agent Updates**: Update agent configurations and settings
 - **Agent Deletion**: Remove agents and cleanup associated resources
 
-### Data Source Management
-- **Book Integration**: Manage agent books (data sources) with provider-specific credentials
-- **Credential Management**: Securely store and manage data source credentials
-- **Provider Support**: Support multiple data providers (S3, Atlas, etc.)
-- **Access Control**: Control agent access to specific data sources
+### Book Integration Management
+- **Book Configuration**: Configure books with provider-specific credentials for agent access
+- **Credential Management**: Securely store and manage book credentials
+- **Provider Support**: Support multiple book providers (S3, Atlas, etc.)
+- **Access Control**: Control which books agents can access and call functions from
 
 ### Agent Configuration
 - **Restrictions Management**: Manage system/restrictions prompts for agents
-- **Capability Configuration**: Configure agent capabilities and behaviors
+- **Mini-Process Generation**: Generate mini_processes in English with hidden SPy code
+- **Book Function Access**: Configure which book functions agents can call through SPy code
 - **Template Management**: Provide agent templates and configurations
 - **Version Control**: Track agent configuration changes over time
 
-### Thread Integration
+### Process Generation and Thread Integration
+- **Mini-Process Creation**: Create mini_processes with English descriptions and hidden SPy code
 - **Agent Thread Creation**: Create threads bound to specific agents
 - **Agent Context**: Maintain agent context within conversation threads
+- **User Approval Flow**: Present mini_processes to users for approval before execution
 - **Multi-Agent Support**: Support multiple agents within conversation flows
-- **Agent Routing**: Route messages to appropriate agents based on context
 
 ## Architecture
 
@@ -85,16 +87,17 @@ The Agent Service Pod contains the core agent management functionality:
 - **Agent Versioning**: Track configuration changes over time
 - **Agent Deletion**: Clean deletion with dependency checking
 
-### Data Source Integration
-- **Multi-Provider Support**: Support various data providers (S3, Atlas, etc.)
-- **Credential Security**: Secure storage and management of provider credentials
-- **Access Control**: Fine-grained access control to data sources
-- **Connection Validation**: Validate data source connections
+### Book Integration
+- **Multi-Provider Support**: Support various book providers (S3, Atlas, etc.)
+- **Credential Security**: Secure storage and management of book credentials
+- **Function Access Control**: Fine-grained control over which book functions agents can call
+- **Book Validation**: Validate book configurations and available functions
 
-### Thread Integration
+### Process Generation and Thread Integration
+- **Mini-Process Generation**: Generate mini_processes with English descriptions and embedded SPy code
 - **Agent-Bound Threads**: Create conversation threads bound to specific agents
 - **Context Management**: Maintain agent-specific context in conversations
-- **Agent Routing**: Route conversations to appropriate agents
+- **Execution Handoff**: Hand off approved mini_processes to Jeeves for execution via Jarvis
 - **Multi-Agent Coordination**: Support multi-agent conversation flows
 
 ### Security and Compliance
@@ -112,7 +115,9 @@ sequenceDiagram
     participant AgentStore as Agent Store
     participant CredMgr as Credential Manager
     participant ThreadMgr as Thread Manager
-    participant DataSource as External Data Source
+    participant Books as Book Services
+    participant Jeeves as Jeeves Service
+    participant Jarvis as Jarvis Service
 
     Client->>AgentSvc: CreateAgent request
     AgentSvc->>CredMgr: Store data source credentials
@@ -129,13 +134,20 @@ sequenceDiagram
     AgentSvc->>Client: Return agent-bound thread
 
     Client->>ThreadMgr: PostMessage to agent thread
-    ThreadMgr->>AgentSvc: Get agent context
-    AgentSvc->>CredMgr: Retrieve data source credentials
-    CredMgr->>AgentSvc: Return credentials
-    AgentSvc->>DataSource: Access agent data
-    DataSource->>AgentSvc: Return data
-    AgentSvc->>ThreadMgr: Provide agent response
-    ThreadMgr->>Client: Return response message
+    ThreadMgr->>AgentSvc: Get agent context and generate response
+    AgentSvc->>AgentSvc: Generate mini_process with English description
+    AgentSvc->>AgentSvc: Embed hidden SPy code in mini_process
+    AgentSvc->>ThreadMgr: Provide mini_process for user approval
+    ThreadMgr->>Client: Return message with mini_process attachment
+    
+    Client->>ThreadMgr: User clicks "run" on mini_process
+    ThreadMgr->>Jeeves: Send SPy code for execution
+    Jeeves->>Jarvis: Execute SPy code with book function calls
+    Jarvis->>Books: Call book functions as needed
+    Books->>Jarvis: Return function results
+    Jarvis->>Jeeves: Return execution results
+    Jeeves->>ThreadMgr: Provide execution results
+    ThreadMgr->>Client: Return execution results
 ```
 
 ## API Specifications
@@ -152,14 +164,15 @@ import "threads/v1/threads.proto";
 message AgentRef { string name = 1; }
 
 message AgentBook {
-  string book_id = 1;                     // e.g., corpus/dataset identifier
+  string book_id = 1;                     // e.g., book identifier for function access
   string provider = 2;                    // e.g., "s3", "atlas", etc.
   google.protobuf.Struct credentials = 3; // provider-specific credentials (opaque)
+  repeated string available_functions = 4; // functions this agent can call from this book
 }
 
 message Agent {
   string name = 1;                         // unique agent name (e.g., "default")
-  repeated AgentBook books = 2;            // data sources with credentials
+  repeated AgentBook books = 2;            // books with credentials and function access
   string restrictions_prompt = 3;          // system/restrictions prompt applied to the agent
   int64 created_at_ms = 4;
   int64 updated_at_ms = 5;
@@ -222,7 +235,8 @@ Content-Type: application/json
           "region": "us-west-2",
           "access_key_id": "AKIA...",
           "secret_access_key": "encrypted_secret"
-        }
+        },
+        "available_functions": ["search_knowledge_base", "get_article", "list_categories"]
       },
       {
         "book_id": "faq-database",
@@ -231,7 +245,8 @@ Content-Type: application/json
           "connection_string": "mongodb+srv://...",
           "database": "faq",
           "collection": "questions"
-        }
+        },
+        "available_functions": ["search_faq", "get_question_by_id", "list_topics"]
       }
     ],
     "restrictions_prompt": "You are a helpful customer support agent. Always be polite and professional. If you don't know the answer, direct the customer to human support."
@@ -250,7 +265,8 @@ Response: 201 Created
           "bucket": "voyager-kb",
           "region": "us-west-2"
           // credentials are masked in response
-        }
+        },
+        "available_functions": ["search_knowledge_base", "get_article", "list_categories"]
       },
       {
         "book_id": "faq-database",
@@ -259,7 +275,8 @@ Response: 201 Created
           "database": "faq",
           "collection": "questions"
           // sensitive credentials masked
-        }
+        },
+        "available_functions": ["search_faq", "get_question_by_id", "list_topics"]
       }
     ],
     "restrictions_prompt": "You are a helpful customer support agent...",
@@ -416,6 +433,7 @@ CREATE TABLE agent_books (
     book_id VARCHAR(255) NOT NULL,
     provider VARCHAR(100) NOT NULL,
     credentials_encrypted TEXT NOT NULL,
+    available_functions JSON NOT NULL, -- list of functions this agent can call
     created_at_ms BIGINT NOT NULL,
     updated_at_ms BIGINT NOT NULL,
     FOREIGN KEY (agent_name) REFERENCES agents(name) ON DELETE CASCADE,
@@ -441,9 +459,9 @@ CREATE TABLE agent_audit_log (
 );
 ```
 
-## Data Source Providers
+## Book Providers
 
-### S3 Provider
+### S3 Book Provider
 ```json
 {
   "provider": "s3",
@@ -454,11 +472,17 @@ CREATE TABLE agent_audit_log (
     "secret_access_key": "encrypted_secret",
     "prefix": "documents/",
     "format": "text" // text, json, pdf
-  }
+  },
+  "available_functions": [
+    "search_documents",
+    "get_document",
+    "list_files",
+    "upload_document"
+  ]
 }
 ```
 
-### Atlas (MongoDB) Provider
+### Atlas (MongoDB) Book Provider
 ```json
 {
   "provider": "atlas",
@@ -468,11 +492,17 @@ CREATE TABLE agent_audit_log (
     "collection": "documents",
     "username": "agent_user",
     "password": "encrypted_password"
-  }
+  },
+  "available_functions": [
+    "query_documents",
+    "find_by_id",
+    "aggregate_data",
+    "insert_document"
+  ]
 }
 ```
 
-### Vector Database Provider
+### Vector Database Book Provider
 ```json
 {
   "provider": "pinecone",
@@ -481,11 +511,17 @@ CREATE TABLE agent_audit_log (
     "environment": "us-west1-gcp",
     "index_name": "knowledge-base",
     "namespace": "customer-support"
-  }
+  },
+  "available_functions": [
+    "vector_search",
+    "upsert_vectors",
+    "delete_vectors",
+    "get_index_stats"
+  ]
 }
 ```
 
-### Custom API Provider
+### Custom API Book Provider
 ```json
 {
   "provider": "custom_api",
@@ -496,7 +532,13 @@ CREATE TABLE agent_audit_log (
       "User-Agent": "VoyagerAgent/1.0"
     },
     "timeout": 30
-  }
+  },
+  "available_functions": [
+    "get_user_data",
+    "create_ticket",
+    "search_records",
+    "update_status"
+  ]
 }
 ```
 
@@ -510,18 +552,24 @@ CREATE TABLE agent_audit_log (
 
 ### With Process Designer
 - **Agent-Assisted Process Writing**: Provide agent capabilities for process development
-- **Knowledge Base Access**: Access agent knowledge bases during process creation
+- **Mini-Process Generation**: Generate mini_processes with embedded SPy code for user approval
 - **Process Validation**: Use agents to validate process designs
 - **Implementation Assistance**: Provide agent-powered implementation guidance
 
 ### With LLM Services
 - **Agent Prompt Management**: Manage agent-specific prompts and restrictions
-- **Knowledge Injection**: Inject agent knowledge into LLM context
+- **Mini-Process Generation**: Use LLM to generate English descriptions for mini_processes
+- **SPy Code Generation**: Generate hidden SPy code that calls book functions
 - **Response Filtering**: Filter LLM responses based on agent restrictions
-- **Capability Enhancement**: Enhance LLM capabilities with agent-specific data
+
+### With Jeeves and Jarvis (Execution Services)
+- **Mini-Process Handoff**: Hand off approved mini_processes to Jeeves for execution
+- **SPy Code Execution**: Jeeves orchestrates SPy code execution through Jarvis
+- **Book Function Calls**: Jarvis executes SPy code that calls configured book functions
+- **Execution Results**: Receive execution results back through the thread system
 
 ### With Vault (Credential Management)
-- **Secure Credential Storage**: Store data source credentials securely
+- **Secure Credential Storage**: Store book credentials securely
 - **Credential Rotation**: Support automatic credential rotation
 - **Access Logging**: Log all credential access for audit purposes
 - **Encryption Management**: Manage encryption keys for credential storage
@@ -536,9 +584,10 @@ CREATE TABLE agent_audit_log (
 
 ### Agent Security
 - **Prompt Injection Protection**: Protect against prompt injection attacks
-- **Data Access Control**: Control agent access to sensitive data sources
+- **Book Function Access Control**: Control which book functions agents can include in SPy code
+- **SPy Code Validation**: Validate generated SPy code for security before user approval
 - **Response Filtering**: Filter agent responses for sensitive information
-- **Rate Limiting**: Implement rate limiting for agent operations
+- **Rate Limiting**: Implement rate limiting for agent operations and mini_process generation
 
 ### API Security
 - **Authentication**: Authenticate all API requests
@@ -560,11 +609,11 @@ CREATE TABLE agent_audit_log (
 - **Lazy Loading**: Lazy load agent books and credentials
 - **Batch Operations**: Support batch operations for multiple agents
 
-### Data Source Access
-- **Connection Caching**: Cache data source connections
-- **Request Batching**: Batch requests to external data sources
-- **Async Operations**: Use asynchronous operations for data access
-- **Circuit Breakers**: Implement circuit breakers for external services
+### Mini-Process Generation
+- **Template Caching**: Cache frequently used mini_process templates
+- **Code Generation**: Optimize SPy code generation for common patterns
+- **Validation**: Validate generated SPy code before presenting to users
+- **Context Awareness**: Generate context-aware mini_processes based on conversation history
 
 ### Scalability Features
 - **Horizontal Scaling**: Scale agent service across multiple instances
@@ -577,14 +626,15 @@ CREATE TABLE agent_audit_log (
 ### Agent Metrics
 - **Agent Creation Rate**: Track agent creation and modification patterns
 - **Agent Usage**: Monitor agent usage and activity patterns
-- **Data Source Access**: Track data source access patterns and performance
+- **Mini-Process Generation**: Monitor mini_process creation rates and approval rates
+- **User Interaction**: Track user approval/rejection patterns for mini_processes
 - **Error Rates**: Monitor error rates for agent operations
 
 ### Performance Metrics
 - **Response Time**: Monitor API response times
 - **Throughput**: Track agent operation throughput
 - **Database Performance**: Monitor database query performance
-- **External Service Latency**: Track latency to external data sources
+- **Mini-Process Generation Time**: Track time to generate mini_processes
 
 ### Security Metrics
 - **Authentication Failures**: Track authentication failures
