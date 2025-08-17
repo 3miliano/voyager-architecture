@@ -24,13 +24,16 @@ Thread Manager is a core service that provides comprehensive thread and message 
 
 ### Real-time Communication
 - **Live Message Streaming**: Stream new messages to connected clients in real-time
+- **Agent Response Streaming**: Forward streaming responses from agents to UI in real-time
 - **Event Broadcasting**: Broadcast chat events to subscribed clients
 - **Connection Management**: Manage WebSocket connections for real-time features
 - **Presence Tracking**: Track active participants in chat threads
 
-### Data Persistence
+### Data Persistence and Action Coordination
 - **Message Storage**: Persist all messages with full content and metadata
+- **Mini-Process Storage**: Store mini_processes attached to messages
 - **Thread Storage**: Store thread information and relationship data
+- **Action Coordination**: Forward user actions to appropriate agent services
 - **Audit Trail**: Maintain complete audit trail of all chat activities
 - **Data Integrity**: Ensure data consistency and integrity across operations
 
@@ -95,6 +98,8 @@ The Thread Manager Pod contains the core thread and message management functiona
 - **Pagination**: Efficient pagination for message listing
 - **Full-text Search**: Search messages within threads
 - **Message Attachments**: Support structured data attachments (mini_process)
+- **Action Buttons**: Support interactive buttons (run, edit, validate) on mini_processes
+- **Agent Action Routing**: Route user actions to appropriate agent services
 - **Bulk Operations**: Support bulk message operations for performance
 
 ## Data Flow
@@ -106,6 +111,7 @@ sequenceDiagram
     participant MsgStore as Message Store
     participant StreamEngine as Streaming Engine
     participant Subscribers as Connected Clients
+    participant AgentSvc as Agent Service
 
     Client->>ThreadMgr: CreateThread request
     ThreadMgr->>MsgStore: Store thread data
@@ -116,8 +122,20 @@ sequenceDiagram
     ThreadMgr->>MsgStore: Store message
     MsgStore->>ThreadMgr: Confirm storage
     
-    ThreadMgr->>StreamEngine: Broadcast message event
-    StreamEngine->>Subscribers: Stream ChatEvent to connected clients
+    alt Agent Thread
+        ThreadMgr->>AgentSvc: Forward message to agent
+        loop Streaming Response
+            AgentSvc->>ThreadMgr: Stream response chunk
+            ThreadMgr->>StreamEngine: Forward chunk to stream
+            StreamEngine->>Subscribers: Stream chunk to UI
+        end
+        AgentSvc->>ThreadMgr: Complete message with mini_process
+        ThreadMgr->>MsgStore: Store complete message
+    else Regular Thread
+        ThreadMgr->>StreamEngine: Broadcast message event
+        StreamEngine->>Subscribers: Stream ChatEvent to connected clients
+    end
+    
     ThreadMgr->>Client: Return ChatMessage
 
     Client->>ThreadMgr: StreamMessages request
@@ -127,6 +145,12 @@ sequenceDiagram
         ThreadMgr->>StreamEngine: New message event
         StreamEngine->>Client: Stream ChatEvent
     end
+    
+    Client->>ThreadMgr: User action (e.g., click "run" button)
+    ThreadMgr->>AgentSvc: Forward action to appropriate agent
+    AgentSvc->>ThreadMgr: Return action results
+    ThreadMgr->>StreamEngine: Broadcast results
+    StreamEngine->>Client: Stream results to UI
 ```
 
 ## API Specifications
@@ -167,6 +191,7 @@ service Threads {
   rpc PostMessage(PostMessageRequest) returns (PostMessageResponse);
   rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse);
   rpc StreamMessages(StreamMessagesRequest) returns (stream ChatEvent);
+  rpc ExecuteAction(ExecuteActionRequest) returns (ExecuteActionResponse);
 }
 ```
 
@@ -191,6 +216,20 @@ message PostMessageRequest {
   string idempotency_key = 5;           // optional client de-dupe
   google.protobuf.Struct mini_process = 8;  // optional structured attachment
   Visibility visibility = 9;            // PUBLIC | HIDDEN
+}
+
+// Agent action requests
+message ExecuteActionRequest {
+  string thread_id = 1;
+  string message_id = 2;               // message containing the actionable content
+  string action = 3;                   // "run", "edit", "validate", etc.
+  map<string, string> parameters = 4;  // action-specific parameters
+}
+message ExecuteActionResponse {
+  string execution_id = 1;
+  google.protobuf.Struct result = 2;
+  string status = 3;                   // "success", "error", "pending"
+  string message = 4;                  // human-readable status message
 }
 message PostMessageResponse { ChatMessage message = 1; }
 
@@ -370,6 +409,8 @@ CREATE TABLE messages (
 
 ### With Agent Service
 - **Agent Thread Creation**: Support agent-specific thread creation
+- **Streaming Coordination**: Forward streaming agent responses to UI in real-time
+- **Action Routing**: Route user actions (run, edit, validate) to appropriate agents
 - **Agent Message Routing**: Route messages to appropriate agents
 - **Agent Context**: Maintain agent context within threads
 - **Multi-Agent Conversations**: Support conversations involving multiple agents

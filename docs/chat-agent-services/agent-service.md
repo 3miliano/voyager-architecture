@@ -29,11 +29,12 @@ Agent Service is a core service that provides comprehensive agent management cap
 - **Template Management**: Provide agent templates and configurations
 - **Version Control**: Track agent configuration changes over time
 
-### Process Generation and Thread Integration
+### Streaming Chat and Process Generation
+- **Streaming Chat Interface**: Provide real-time streaming chat responses to users
 - **Mini-Process Creation**: Create mini_processes with English descriptions and hidden SPy code
 - **Agent Thread Creation**: Create threads bound to specific agents
 - **Agent Context**: Maintain agent context within conversation threads
-- **User Approval Flow**: Present mini_processes to users for approval before execution
+- **Agent-Specific Actions**: Handle all agent-specific actions like "run", "edit", "validate"
 - **Multi-Agent Support**: Support multiple agents within conversation flows
 
 ## Architecture
@@ -51,6 +52,7 @@ The Agent Service Pod contains the core agent management functionality:
 
 **APIs**:
 - **gRPC**: Full agents.proto implementation for agent operations
+- **gRPC Streaming**: Real-time chat interface for agent conversations
 - **REST via Gateway**: `/api/v1/agents` endpoints for HTTP access
 
 ##### Agent Service gRPC Transcoder
@@ -93,11 +95,13 @@ The Agent Service Pod contains the core agent management functionality:
 - **Function Access Control**: Fine-grained control over which book functions agents can call
 - **Book Validation**: Validate book configurations and available functions
 
-### Process Generation and Thread Integration
+### Streaming Chat and Process Generation
+- **Real-time Streaming**: Stream agent responses to users in real-time through Thread Manager
 - **Mini-Process Generation**: Generate mini_processes with English descriptions and embedded SPy code
 - **Agent-Bound Threads**: Create conversation threads bound to specific agents
 - **Context Management**: Maintain agent-specific context in conversations
-- **Execution Handoff**: Hand off approved mini_processes to Jeeves for execution via Jarvis
+- **Action Handling**: Handle all agent-specific actions (run, edit, validate, etc.)
+- **Execution Coordination**: Coordinate with Jeeves for mini_process execution
 - **Multi-Agent Coordination**: Support multi-agent conversation flows
 
 ### Security and Compliance
@@ -134,20 +138,29 @@ sequenceDiagram
     AgentSvc->>Client: Return agent-bound thread
 
     Client->>ThreadMgr: PostMessage to agent thread
-    ThreadMgr->>AgentSvc: Get agent context and generate response
-    AgentSvc->>AgentSvc: Generate mini_process with English description
-    AgentSvc->>AgentSvc: Embed hidden SPy code in mini_process
-    AgentSvc->>ThreadMgr: Provide mini_process for user approval
-    ThreadMgr->>Client: Return message with mini_process attachment
+    ThreadMgr->>AgentSvc: Forward message to agent
+    
+    loop Streaming Response
+        AgentSvc->>AgentSvc: Generate response chunk
+        AgentSvc->>ThreadMgr: Stream response chunk
+        ThreadMgr->>Client: Forward streamed chunk to UI
+    end
+    
+    AgentSvc->>AgentSvc: Generate final mini_process with SPy code
+    AgentSvc->>ThreadMgr: Send complete message with mini_process
+    ThreadMgr->>ThreadMgr: Persist complete message
+    ThreadMgr->>Client: Display mini_process with "run" button
     
     Client->>ThreadMgr: User clicks "run" on mini_process
-    ThreadMgr->>Jeeves: Send SPy code for execution
+    ThreadMgr->>AgentSvc: Forward run action to agent service
+    AgentSvc->>Jeeves: Send SPy code for execution
     Jeeves->>Jarvis: Execute SPy code with book function calls
     Jarvis->>Books: Call book functions as needed
     Books->>Jarvis: Return function results
     Jarvis->>Jeeves: Return execution results
-    Jeeves->>ThreadMgr: Provide execution results
-    ThreadMgr->>Client: Return execution results
+    Jeeves->>AgentSvc: Provide execution results
+    AgentSvc->>ThreadMgr: Return execution results
+    ThreadMgr->>Client: Display execution results
 ```
 
 ## API Specifications
@@ -185,6 +198,12 @@ service Agents {
   rpc DeleteAgent(DeleteAgentRequest) returns (DeleteAgentResponse);
   rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
   rpc StartAgentThread(StartAgentThreadRequest) returns (StartAgentThreadResponse);
+  
+  // Streaming chat interface
+  rpc Chat(stream AgentChatMessage) returns (stream AgentChatMessage);
+  
+  // Agent-specific actions
+  rpc ExecuteMiniProcess(ExecuteMiniProcessRequest) returns (ExecuteMiniProcessResponse);
 }
 ```
 
@@ -214,6 +233,29 @@ message StartAgentThreadRequest {
   map<string, string> metadata = 3;         // optional UI/session correlation
 }
 message StartAgentThreadResponse { threads.v1.Thread thread = 1; }
+
+// Streaming chat messages
+message AgentChatMessage {
+  string thread_id = 1;
+  threads.v1.Role role = 2; // USER | ASSISTANT | SYSTEM
+  string content = 3;       // markdown/plain text
+  string client_msg_id = 4; // optional client-generated id
+  google.protobuf.Struct mini_process = 5; // optional mini_process attachment
+}
+
+// Agent-specific actions
+message ExecuteMiniProcessRequest {
+  string thread_id = 1;
+  string message_id = 2;     // message containing the mini_process
+  string action = 3;         // "run", "edit", "validate", etc.
+  map<string, string> parameters = 4; // action-specific parameters
+}
+message ExecuteMiniProcessResponse {
+  string execution_id = 1;
+  google.protobuf.Struct result = 2;
+  string status = 3;         // "success", "error", "pending"
+  string message = 4;        // human-readable status message
+}
 ```
 
 ### REST APIs (via Gateway)
@@ -545,9 +587,11 @@ CREATE TABLE agent_audit_log (
 ## Integration Points
 
 ### With Thread Manager
+- **Streaming Integration**: Stream agent responses through Thread Manager to users
+- **Message Persistence**: Thread Manager persists complete messages with mini_processes
+- **Action Coordination**: Thread Manager forwards user actions to appropriate Agent Service
 - **Agent Thread Creation**: Create threads bound to specific agents
 - **Agent Context Injection**: Inject agent context into thread metadata
-- **Message Processing**: Process messages with agent-specific context
 - **Multi-Agent Threads**: Support threads with multiple agents
 
 ### With Process Designer
@@ -563,10 +607,11 @@ CREATE TABLE agent_audit_log (
 - **Response Filtering**: Filter LLM responses based on agent restrictions
 
 ### With Jeeves and Jarvis (Execution Services)
-- **Mini-Process Handoff**: Hand off approved mini_processes to Jeeves for execution
-- **SPy Code Execution**: Jeeves orchestrates SPy code execution through Jarvis
+- **Action-Based Execution**: Handle user actions (run, edit, validate) on mini_processes
+- **SPy Code Execution**: Send SPy code to Jeeves for orchestrated execution through Jarvis
 - **Book Function Calls**: Jarvis executes SPy code that calls configured book functions
-- **Execution Results**: Receive execution results back through the thread system
+- **Execution Results**: Receive execution results and format for user display
+- **Execution Coordination**: Manage execution lifecycle and status updates
 
 ### With Vault (Credential Management)
 - **Secure Credential Storage**: Store book credentials securely
