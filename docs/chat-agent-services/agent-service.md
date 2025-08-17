@@ -112,6 +112,8 @@ The Agent Service Pod contains the core agent management functionality:
 
 ## Data Flow
 
+### Agent Creation and Configuration Flow
+
 ```mermaid
 sequenceDiagram
     participant Client as Client Application
@@ -119,16 +121,19 @@ sequenceDiagram
     participant AgentStore as Agent Store
     participant CredMgr as Credential Manager
     participant ThreadMgr as Thread Manager
-    participant Books as Book Services
-    participant Jeeves as Jeeves Service
-    participant Jarvis as Jarvis Service
 
     Client->>AgentSvc: CreateAgent request
-    AgentSvc->>CredMgr: Store data source credentials
+    AgentSvc->>CredMgr: Store book credentials securely
     CredMgr->>AgentSvc: Confirm credential storage
     AgentSvc->>AgentStore: Store agent configuration
     AgentStore->>AgentSvc: Return agent ID
     AgentSvc->>Client: Return Agent object
+
+    Client->>AgentSvc: UpdateAgent request
+    AgentSvc->>CredMgr: Update credentials if changed
+    AgentSvc->>AgentStore: Update agent configuration
+    AgentStore->>AgentSvc: Confirm update
+    AgentSvc->>Client: Return updated Agent
 
     Client->>AgentSvc: StartAgentThread request
     AgentSvc->>AgentStore: Retrieve agent configuration
@@ -136,6 +141,18 @@ sequenceDiagram
     AgentSvc->>ThreadMgr: CreateThread with agent context
     ThreadMgr->>AgentSvc: Return thread
     AgentSvc->>Client: Return agent-bound thread
+```
+
+### Agent Chat and Interaction Flow
+
+```mermaid
+sequenceDiagram
+    participant Client as Client Application
+    participant ThreadMgr as Thread Manager
+    participant AgentSvc as Agent Service
+    participant Jeeves as Jeeves Service
+    participant Jarvis as Jarvis Service
+    participant Books as Book Services
 
     Client->>ThreadMgr: PostMessage to agent thread
     ThreadMgr->>AgentSvc: Forward message to agent
