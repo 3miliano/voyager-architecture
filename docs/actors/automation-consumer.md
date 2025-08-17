@@ -1,4 +1,4 @@
-# New Customer - Solution Adopter and End User
+# Automation Consumer - Solution Adopter and End User
 
 **User Type**: Primary Actor  
 **Domain**: Default Domain  
@@ -6,11 +6,11 @@
 
 ## Overview
 
-The New Customer represents individuals and organizations who are adopting the Voyager platform to automate their business processes. They are the primary beneficiaries of the automation solutions and drive the requirements for features, usability, and business value delivery.
+The Automation Consumer represents individuals and organizations who are adopting the Voyager platform to automate their business processes. They are the primary beneficiaries of the automation solutions and drive the requirements for features, usability, and business value delivery.
 
-## Customer Profile
+## Consumer Profile
 
-### Customer Types
+### Consumer Types
 - **Small Business Owners**: Individual entrepreneurs and small business owners
 - **Enterprise Teams**: Department heads and process owners in large organizations
 - **IT Professionals**: Technical professionals implementing automation solutions
@@ -24,7 +24,7 @@ The New Customer represents individuals and organizations who are adopting the V
 - **E-commerce**: Online retail and marketplace businesses
 - **Manufacturing**: Manufacturing and supply chain operations
 
-## Customer Journey
+## Consumer Journey
 
 ### Discovery Phase
 1. **Problem Recognition**: Identify manual processes that need automation
@@ -82,7 +82,7 @@ The New Customer represents individuals and organizations who are adopting the V
 - **Monitoring**: Comprehensive monitoring and visibility into process performance
 - **Security**: Secure handling of sensitive business data and processes
 
-## Customer Needs and Requirements
+## Consumer Needs and Requirements
 
 ### Functional Requirements
 - **Ease of Use**: Intuitive interface and easy-to-use automation tools
@@ -98,7 +98,7 @@ The New Customer represents individuals and organizations who are adopting the V
 - **Cost-Effectiveness**: Reasonable pricing and clear ROI
 - **Compliance**: Compliance with industry regulations and standards
 
-## Customer Success Factors
+## Consumer Success Factors
 
 ### Implementation Success
 - **Clear Objectives**: Well-defined automation objectives and success criteria
@@ -136,7 +136,7 @@ The New Customer represents individuals and organizations who are adopting the V
 
 ## Feedback and Improvement
 
-### Customer Feedback Channels
+### Consumer Feedback Channels
 - **User Surveys**: Regular user satisfaction surveys and feedback collection
 - **Feature Requests**: Formal process for submitting feature requests and enhancements
 - **User Interviews**: Regular user interviews to understand needs and challenges
@@ -146,7 +146,7 @@ The New Customer represents individuals and organizations who are adopting the V
 - **Product Roadmap**: Transparent product roadmap influenced by customer feedback
 - **Release Communications**: Regular communication about new features and improvements
 - **Beta Programs**: Early access to new features through beta programs
-- **Customer Advisory Board**: Customer advisory board for strategic input and guidance
+- **Consumer Advisory Board**: Consumer advisory board for strategic input and guidance
 
 ## Success Metrics
 
@@ -160,7 +160,7 @@ The New Customer represents individuals and organizations who are adopting the V
 - **Efficiency Gains**: Measured efficiency improvements from automation
 - **Cost Savings**: Quantified cost savings achieved through automation
 - **Error Reduction**: Reduction in process errors and quality improvements
-- **Customer Satisfaction**: Customer satisfaction with automation results
+- **Consumer Satisfaction**: Consumer satisfaction with automation results
 - **ROI Achievement**: Return on investment from automation initiatives
 
 ## Challenges and Solutions

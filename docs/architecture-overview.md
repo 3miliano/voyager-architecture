@@ -116,9 +116,6 @@ SPy programs are a subset of Python (specification pending) that define automati
 ### Processes
 Processes define how AI agents interact and coordinate to accomplish tasks within the Voyager platform.
 
-### Agent Operating Procedures (AOP)
-Agent Operating Procedures define how AI agents interact and coordinate to accomplish tasks within the Voyager platform.
-
 ## Core Execution Flow
 
 1. **Request Initiation**: Client requests come through Envoy Gateway
