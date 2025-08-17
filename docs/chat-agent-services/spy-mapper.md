@@ -413,11 +413,13 @@ flowchart TD
 - **Error Logs**: Access error logs and exception information
 - **Trend Analysis**: Perform trend analysis on historical data
 
-### With Threads Service
-- **Chat Interface**: Provide chat-based interface for mapping requests
-- **Interactive Exploration**: Support interactive exploration of process maps
-- **Collaborative Analysis**: Enable collaborative process analysis sessions
-- **Sharing Capabilities**: Share process maps and insights with team members
+### With Agent Services (via Thread Manager)
+- **Agent-Driven Analysis**: Provide process analysis capabilities to agents operating in chat threads
+- **Interactive Process Mapping**: Support agents in delivering interactive process analysis to users
+- **Collaborative Agent Sessions**: Enable agents to facilitate collaborative process analysis
+- **Agent-Mediated Insights**: Deliver process maps and insights through agent interfaces
+
+**Note**: Spy Mapper does not directly interface with Thread Manager. Thread Manager provides the chat infrastructure that agents use to deliver process analysis capabilities to users through conversational interfaces.
 
 ### With BDK (Book Development Kit)
 - **Process Documentation**: Generate process documentation for BDK

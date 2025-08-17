@@ -38,7 +38,9 @@ graph TB
         Jarvis[Jarvis - Execution Engine]
         Journal[Business Journal - Fact Storage]
         Grimoire[Grimoire - AI Process Management]
-        Threads[Threads - AI Chat Orchestration]
+        ThreadMgr[Thread Manager - Chat & Message Management]
+        ProcessDesigner[Process Designer - AI Process Writing]
+        AgentService[Agent Service - Agent Management]
         Guidance[Guidance Center - AI Troubleshooting]
         Triage[Triage - Exception Handling]
     end
@@ -63,7 +65,9 @@ graph TB
     Gateway --> Jeeves
     Gateway --> Journal
     Gateway --> Grimoire
-    Gateway --> Threads
+    Gateway --> ThreadMgr
+    Gateway --> ProcessDesigner
+    Gateway --> AgentService
     Gateway --> BDK
     Gateway --> Bifrost
     Gateway --> LLM
@@ -79,7 +83,8 @@ graph TB
     Journal --> InfluxDB
     Journal --> Redis
     Grimoire --> PostgreSQL
-    Threads --> PostgreSQL
+    ThreadMgr --> PostgreSQL
+    AgentService --> PostgreSQL
     UOM --> PostgreSQL
     
     BDK --> Books
@@ -94,7 +99,9 @@ graph TB
     Triage --> Guidance
 
     Kafka --> Journal
-    LLM --> Threads
+    LLM --> ProcessDesigner
+    ProcessDesigner --> ThreadMgr
+    AgentService --> ThreadMgr
     LLM --> Grimoire
     LLM --> Guidance
     LLM --> Books
@@ -132,7 +139,9 @@ Each service has a clear, focused responsibility:
 - **Jeeves**: Orchestrate runs and manage execution metadata
 - **Business Journal**: Persist facts in InfluxDB and provide dynamic querying
 - **Grimoire**: Store English process specifications and provide AI-powered process design
-- **Threads**: AI-powered chat orchestration and Process management
+- **Thread Manager**: Chat thread and message management for conversational AI services
+- **Process Designer**: AI-powered process writing and design through chat interface
+- **Agent Service**: Agent management and configuration with data source integration
 - **BDK**: Python skill collection (Book) development, deployment, and lifecycle management
 - **Bifrost**: Network management and secure customer connectivity
 - **Guidance Center**: Exception handling and troubleshooting for Automation Troubleshooters
@@ -155,7 +164,7 @@ execution_control:
 events:
   - execution_logs           # Jarvis → Telegraf raw logs
   - run_status               # Run lifecycle events
-  - thread_events           # Threads → Journal conversation events
+  - thread_events           # Thread Manager → Journal conversation events
 
 # Exception Handling
 exceptions:
@@ -179,7 +188,7 @@ analytics:
 ### AI-First Architecture
 AI capabilities are deeply integrated throughout the platform:
 - **Centralized AI Services**: LLM Services provides unified AI access
-- **Agent Orchestration**: Threads manages AI agents and tools
+- **Agent Orchestration**: Agent Service manages AI agents and Thread Manager handles conversations
 - **Intelligent Process Design**: Grimoire uses AI for process optimization
 - **Automated Troubleshooting**: Guidance Center provides AI-powered issue resolution
 - **Context-Aware Intelligence**: AI services leverage historical data and patterns

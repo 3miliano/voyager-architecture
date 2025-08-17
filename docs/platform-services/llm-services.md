@@ -451,11 +451,13 @@ Response: 201 Created
 - **Documentation**: Auto-generate process documentation
 - **Optimization**: Suggest process optimizations based on AI analysis
 
-### With Threads
-- **Conversational AI**: Provide conversational AI capabilities for threads and agents
-- **Response Generation**: Generate thread responses through LLM integration
-- **Context Processing**: Process conversation context for intelligent responses
-- **Personalization**: Personalize responses based on thread/agent configuration
+### With Agent Services (via Thread Manager)
+- **Conversational AI**: Provide AI capabilities to agents that operate within threads
+- **Response Generation**: Generate intelligent responses for agents in chat conversations
+- **Context Processing**: Process conversation context for agents to create intelligent responses
+- **Agent AI Support**: Support various agent types with specialized AI capabilities
+
+**Note**: LLM Services does not directly interface with Thread Manager. Thread Manager is pure infrastructure that routes messages to agents, and agents use LLM Services for AI processing.
 
 ### With Process Designer
 - **Interactive Authoring**: Support interactive agent-oriented design with AI assistance

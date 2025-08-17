@@ -40,10 +40,10 @@ Complete index of all services in the Voyager architecture with quick reference 
 
 | Service | Namespace | Technology | Purpose | APIs |
 |---------|-----------|------------|---------|------|
-| [Threads](chat-agent-services/threads.md) | `threads` | Rust, PostgreSQL, AI Agents | AI-powered chat orchestration | gRPC, REST, WebSocket |
-| [Process Designer](chat-agent-services/process-designer.md) | `threads` | Python, AI/ML | Process design | gRPC, REST |
+| [Thread Manager](chat-agent-services/thread-manager.md) | `threads` | Python, gRPC, Database | Chat thread and message management for conversational AI | gRPC, REST, WebSocket |
+| [Process Designer](chat-agent-services/process-designer.md) | `threads` | Python, AI/ML, Agent Frameworks | Process writing and design through AI-powered chat interface | gRPC Streaming, REST, WebSocket |
+| [Agent Service](chat-agent-services/agent-service.md) | `threads` | Python, gRPC, Database | Agent management and configuration with data source integration | gRPC, REST |
 | [Spy Mapper](chat-agent-services/spy-mapper.md) | `threads` | Python, AI/ML | SPy program (Python subset) analysis | gRPC, REST |
-| [Spy Writer](chat-agent-services/spy-writer.md) | `threads` | Python, AI/ML | SPy program (Python subset) generation | gRPC, REST |
 
 ## Integration Services
 
@@ -77,7 +77,6 @@ Complete index of all services in the Voyager architecture with quick reference 
 - Jeeves (Run Orchestration)
 - Business Journal (Fact Persistence)
 - Grimoire (English Process Specifications)
-- Threads (AI Chat Orchestration)
 - Guidance Center (Complex Exception Escalation Hub)
 - Triage (First Responder for All Exceptions)
 - UOM (Identity)
@@ -89,12 +88,13 @@ Complete index of all services in the Voyager architecture with quick reference 
 #### Python Services
 - Books (Shared skill collections for 3rd party integration)
 - Customer Book Deployments (Customer-specific skill collections)
-- Process Designer (Process design)
+- Thread Manager (Chat thread and message management)
+- Process Designer (AI-powered process writing and design)
+- Agent Service (Agent management and configuration)
 - Spy Mapper (SPy program analysis - Python subset)
-- Spy Writer (SPy program generation - Python subset)
 
 #### Database Services
-- PostgreSQL: Jeeves, Grimoire, Threads, UOM
+- PostgreSQL: Jeeves, Grimoire, Thread Manager, Agent Service, UOM
 - InfluxDB: Business Journal (fact persistence)
 - Redis: Caching across services
 
@@ -114,7 +114,7 @@ Complete index of all services in the Voyager architecture with quick reference 
 1. Jarvis → Kafka → Guidance Center → Automation Troubleshooter
 
 #### Chat Path
-1. Client → Envoy Gateway → Agents → Threads → WebSocket stream
+1. Client → Envoy Gateway → Process Designer → Thread Manager → WebSocket stream
 
 #### Process Management Path
 1. Client → Envoy Gateway → Grimoire → Process Database (English specifications)

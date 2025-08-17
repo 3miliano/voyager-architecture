@@ -1,416 +1,478 @@
-# Process Designer - Process Design and Development
+# Process Designer - AI-Powered Process Development
 
 **Namespace**: `threads`  
 **Technology**: Python, AI/ML, Agent Frameworks  
-**Purpose**: Design and develop Processes and multi-agent coordination systems
+**Purpose**: Develop processes through conversational AI interface with live process patching
 
 ## Overview
 
-AOP Designer (Agent Operating Procedure Designer) is an AI-powered service that assists in designing, developing, and optimizing Processes. It provides intelligent assistance for creating multi-agent coordination systems, designing agent interactions, and implementing agent-based automation workflows within the Voyager platform.
+Process Designer is an AI-powered service that enables users to create processes through natural conversation with a specialized Process Designer agent. The service provides live process patching capabilities similar to cursor.sh, where the agent incrementally builds and updates process content through chat interactions.
 
 ## Responsibilities
 
-### Agent System Design
-- **Multi-Agent Architecture**: Design architecture for multi-agent systems and interactions
-- **Agent Behavior Modeling**: Model agent behaviors, capabilities, and interaction patterns
-- **Communication Protocols**: Design communication protocols between agents
-- **Coordination Mechanisms**: Design coordination and collaboration mechanisms
+### Conversational Process Development
+- **Process Designer Agent**: Specialized AI agent for process development conversations
+- **Live Process Building**: Build processes incrementally through chat interactions
+- **Process Patching**: Apply live patches to process content during conversation
+- **Context Management**: Maintain conversation and process development state
 
-### Development Assistance
-- **Code Generation**: Generate agent code and implementation templates
-- **Pattern Recognition**: Identify and suggest proven agent design patterns
-- **Best Practices**: Provide guidance on agent development best practices
-- **Testing Strategies**: Suggest testing approaches for agent systems
+### Process Generation
+- **From-Scratch Generation**: Generate processes from natural language requirements without templates
+- **Incremental Development**: Build processes step by step through conversation
+- **Process Documentation**: Create comprehensive process documentation
+- **SPy Code Integration**: Generate SPy code as part of process development
 
-### Optimization and Analysis
-- **Performance Analysis**: Analyze agent system performance and bottlenecks
-- **Interaction Optimization**: Optimize agent interactions and communication
-- **Resource Management**: Optimize agent resource usage and allocation
-- **Scalability Planning**: Plan for agent system scalability and growth
+### Code Generation and Development
+- **SPy Program Generation**: Generate complete SPy programs from process requirements
+- **Function Generation**: Generate specific functions and code blocks for SPy programs
+- **Integration Code**: Generate code for system integrations and API connections
+- **Implementation Guidance**: Provide step-by-step implementation guidance
+
+### Quality Assurance
+- **Process Validation**: Validate processes for completeness and clarity
+- **Process Analysis**: Analyze processes for efficiency and potential issues
+- **Best Practice Compliance**: Ensure processes follow established best practices
+- **Code Quality**: Ensure generated SPy code meets quality standards
 
 ## Architecture
 
 ### Services within Namespace
 
-#### AOP Designer Pod
-The AOP Designer Pod contains the core agent design functionality:
+#### Process Designer Pod
+The Process Designer Pod contains the core process development functionality:
 
-##### AOP Designer Service
-- **Purpose**: Core agent-oriented programming design and assistance
+##### Process Designer Service
+- **Purpose**: Core process development through conversational AI interface
 - **Technology**: Kubernetes Service (K8 Service), Kubernetes Deployment (K8 Deployment), Python application
-- **Function**: Provides AI-powered assistance for agent system design and development
-- **Integration**: Integrates with Threads for chat-based interaction and with other agent services
+- **Function**: Provides AI-powered process development through chat with live patching
+- **Integration**: Integrates with Thread Manager for chat sessions and Agent Service for process designer agent
 
 **APIs**:
-- **gRPC**: Agent design consultation, code generation, pattern analysis
-- **REST via Gateway**: `/api/v1/aop-designer` endpoints for design assistance
+- **gRPC**: Process Designer specific thread creation and management
+- **REST via Gateway**: `/api/v1/process-designer` endpoints for process development
 
-##### AOP Designer gRPC Transcoder
+##### Process Designer gRPC Transcoder
 - **Purpose**: Protocol translation and gateway integration
 - **Technology**: Envoy application
 - **Function**: Translates between REST and gRPC protocols for external API access
 
 **APIs**:
-- **REST via Gateway**: Agent design operations accessible through Envoy Gateway
+- **REST via Gateway**: Process development operations accessible through Envoy Gateway
 
-#### Agent Pattern Library
-- **Purpose**: Repository of proven agent design patterns and templates
-- **Technology**: Knowledge base and pattern storage
-- **Function**: Maintains library of agent patterns, templates, and best practices
-- **Access**: Used by AOP Designer for pattern suggestions and code generation
+#### Process Builder Engine
+- **Purpose**: Incremental process building and patching engine
+- **Technology**: AI-powered process generation with patch capabilities
+- **Function**: Builds processes incrementally through conversation patches
+- **Capabilities**: Context awareness, patch generation, SPy code integration
+
+#### Process Designer Agent
+- **Purpose**: Specialized AI agent for process development conversations
+- **Technology**: AI agent with process development expertise
+- **Function**: Converses with users to understand requirements and build processes
+- **Capabilities**: Natural language understanding, process expertise, code generation
 
 ## Key Features
 
-### Intelligent Design Assistance
-- **Requirements Analysis**: Analyze automation requirements and suggest agent-based solutions
-- **Architecture Recommendations**: Recommend appropriate agent architectures and patterns
-- **Component Identification**: Identify potential agents and their responsibilities
-- **Interaction Design**: Design agent interaction patterns and communication flows
+### Conversational Process Development
+- **Natural Conversation**: Users describe what they want in natural language
+- **Incremental Building**: Process built step by step through conversation
+- **Live Patching**: Process content updated in real-time during conversation
+- **Context Awareness**: Agent understands what's already been built
 
-### Code Generation and Templates
-- **Agent Templates**: Generate agent implementation templates based on requirements
-- **Communication Code**: Generate code for inter-agent communication and coordination
-- **Configuration Files**: Generate configuration files for agent deployment
-- **Test Scaffolding**: Generate test frameworks and validation code
+### Live Process Patching
+- **Real-time Updates**: Process content updated live during conversation (like cursor.sh)
+- **Patch Application**: Apply incremental patches to process content
+- **Version Tracking**: Track process changes throughout development
+- **Undo Capability**: Ability to undo patches and revert changes
 
-### Pattern Recognition and Suggestions
-- **Design Pattern Matching**: Match requirements to proven design patterns
-- **Anti-Pattern Detection**: Detect and warn about potential anti-patterns
-- **Best Practice Recommendations**: Suggest best practices for agent development
-- **Architecture Reviews**: Provide automated architecture review and feedback
+### Intelligent Process Generation
+- **No Templates**: Generate processes from scratch based on user requirements
+- **Adaptive Generation**: Adapt process structure based on conversation flow
+- **Best Practice Integration**: Incorporate best practices automatically
+- **SPy Code Generation**: Generate implementation code alongside process documentation
 
-### Multi-Agent System Support
-- **Agent Orchestration**: Design agent orchestration and workflow patterns
-- **Load Balancing**: Design load balancing strategies for agent workloads
-- **Fault Tolerance**: Design fault tolerance and recovery mechanisms
-- **State Management**: Design state management approaches for agent systems
+### Quality Assurance
+- **Real-time Validation**: Validate process content as it's being developed
+- **Completeness Checking**: Ensure all necessary process elements are included
+- **Code Quality**: Validate generated SPy code for correctness and security
+- **Best Practice Compliance**: Ensure processes follow established patterns
 
 ## Data Flow
 
+### Process Development Thread Creation
+
 ```mermaid
 sequenceDiagram
-    participant User as Automation Designer
-    participant Threads as Threads Service
-    participant AOPDesigner as AOP Designer
-    participant PatternLib as Pattern Library
-    participant CodeGen as Code Generator
-    participant BDK as Book Development Kit
+    participant User as User
+    participant Client as Client Application
+    participant ProcessDesigner as Process Designer Service
+    participant AgentSvc as Agent Service
+    participant ThreadMgr as Thread Manager
 
-    User->>Threads: Request agent system design
-    Threads->>AOPDesigner: Analyze requirements
-    AOPDesigner->>PatternLib: Query relevant patterns
-    PatternLib->>AOPDesigner: Return pattern matches
+    User->>Client: Request new process development
+    Client->>ProcessDesigner: CreateProcessThread request
+    ProcessDesigner->>AgentSvc: StartAgentThread with process-designer-agent
+    AgentSvc->>ThreadMgr: CreateThread with agent context
+    ThreadMgr->>AgentSvc: Return thread
+    AgentSvc->>ProcessDesigner: Return agent-bound thread
+    ProcessDesigner->>Client: Return thread_id and WebSocket URL
+    Client->>User: Display chat interface ready for process development
+```
+
+### Process Development Conversation and Live Patching
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant Client as Client Application
+    participant ThreadMgr as Thread Manager
+    participant AgentSvc as Agent Service
+    participant ProcessBuilder as Process Builder Engine
+    participant LLM as LLM Services
+
+    User->>Client: Connect to WebSocket for process development
+    Client->>ThreadMgr: Establish WebSocket connection
     
-    AOPDesigner->>AOPDesigner: Generate design recommendations
-    AOPDesigner->>CodeGen: Request code templates
-    CodeGen->>AOPDesigner: Return generated code
+    loop Process Development Conversation
+        User->>Client: Send message (requirements, feedback, questions)
+        Client->>ThreadMgr: PostMessage to process development thread
+        ThreadMgr->>AgentSvc: Forward message to process-designer-agent
+        
+        AgentSvc->>ProcessBuilder: Generate process content and patches
+        ProcessBuilder->>LLM: Analyze requirements and generate content
+        LLM->>ProcessBuilder: Return process content and SPy code
+        ProcessBuilder->>AgentSvc: Return process patches
+        
+        loop Streaming Response with Patches
+            AgentSvc->>AgentSvc: Generate response chunk with patches
+            AgentSvc->>ThreadMgr: Stream response chunk
+            ThreadMgr->>Client: Forward patch to UI
+            Client->>User: Apply live patch to process view
+        end
+        
+        AgentSvc->>ThreadMgr: Send complete message with mini_process
+        ThreadMgr->>ThreadMgr: Persist message with process state
+    end
     
-    AOPDesigner->>Threads: Provide design and code
-    Threads->>User: Present design recommendations
-    
-    User->>BDK: Implement agent solution
-    BDK->>AOPDesigner: Request deployment configuration
-    AOPDesigner->>BDK: Provide deployment specs
+    User->>Client: Process development complete
+    Client->>ThreadMgr: Get final process content
+    ThreadMgr->>Client: Return complete process document
+    Client->>User: Display final process with implementation code
 ```
 
 ## API Specifications
 
 ### gRPC APIs
 
-#### Design Consultation
+#### Process Development Thread Creation
 ```protobuf
-service AOPDesigner {
-  rpc AnalyzeRequirements(AnalyzeRequirementsRequest) returns (AnalyzeRequirementsResponse);
-  rpc DesignAgentSystem(DesignAgentSystemRequest) returns (DesignAgentSystemResponse);
-  rpc GenerateAgentCode(GenerateAgentCodeRequest) returns (GenerateAgentCodeResponse);
-  rpc OptimizeAgentSystem(OptimizeAgentSystemRequest) returns (OptimizeAgentSystemResponse);
-  rpc ValidateDesign(ValidateDesignRequest) returns (ValidateDesignResponse);
+service ProcessDesigner {
+  rpc CreateProcessThread(CreateProcessThreadRequest) returns (CreateProcessThreadResponse);
+  rpc GetProcessThread(GetProcessThreadRequest) returns (GetProcessThreadResponse);
 }
 
-message AnalyzeRequirementsRequest {
-  string project_id = 1;
-  string requirements_text = 2;
-  repeated string existing_systems = 3;
-  map<string, string> constraints = 4;
+message CreateProcessThreadRequest {
+  string title = 1;                        // process title
+  string description = 2;                  // initial process description
+  map<string, string> context = 3;         // development context
+  map<string, string> metadata = 4;        // session metadata
 }
 
-message DesignAgentSystemRequest {
-  string project_id = 1;
-  AgentSystemRequirements requirements = 2;
-  DesignPreferences preferences = 3;
-  repeated string target_platforms = 4;
+message CreateProcessThreadResponse {
+  string thread_id = 1;
+  string websocket_url = 2;               // WebSocket URL for chat
+  string agent_name = 3;                  // Process Designer agent name
+  int64 created_at_ms = 4;
 }
 
-message AgentSystemRequirements {
-  repeated AgentRole roles = 1;
-  repeated InteractionPattern interactions = 2;
-  repeated string business_rules = 3;
-  PerformanceRequirements performance = 4;
+message GetProcessThreadRequest {
+  string thread_id = 1;
 }
 
-message AgentRole {
-  string name = 1;
-  string description = 2;
-  repeated string capabilities = 3;
-  repeated string responsibilities = 4;
-  map<string, string> properties = 5;
-}
-```
-
-#### Code Generation
-```protobuf
-rpc GenerateAgentCode(GenerateAgentCodeRequest) returns (GenerateAgentCodeResponse);
-rpc GenerateTestCode(GenerateTestCodeRequest) returns (GenerateTestCodeResponse);
-
-message GenerateAgentCodeRequest {
-  string agent_specification = 1;
-  string target_language = 2;
-  string framework = 3;
-  repeated string dependencies = 4;
-  CodeStyle style_preferences = 5;
-}
-
-message GenerateAgentCodeResponse {
-  repeated GeneratedFile files = 1;
-  repeated string dependencies = 2;
-  string documentation = 3;
-  repeated ValidationIssue issues = 4;
-}
-
-message GeneratedFile {
-  string filename = 1;
-  string content = 2;
-  string file_type = 3;
-  map<string, string> metadata = 4;
+message GetProcessThreadResponse {
+  string thread_id = 1;
+  string title = 2;
+  string current_process_content = 3;     // current state of process
+  string status = 4;                      // "active", "completed", "paused"
+  int64 created_at_ms = 5;
+  int64 updated_at_ms = 6;
 }
 ```
 
 ### REST APIs (via Gateway)
 
-#### Design Consultation
+#### Create Process Development Thread
 ```http
-POST /api/v1/aop-designer/analyze-requirements
+POST /api/v1/process-designer/threads
 Content-Type: application/json
 
 {
-  "project_id": "automation-project-123",
-  "requirements_text": "Automate customer support ticket routing with intelligent prioritization and escalation",
-  "existing_systems": ["zendesk", "salesforce", "slack"],
-  "constraints": {
-    "response_time": "< 30 seconds",
-    "availability": "99.9%",
-    "languages": ["python", "javascript"]
-  }
-}
-
-Response: 200 OK
-{
-  "analysis_id": "analysis-uuid",
-  "recommended_agents": [
-    {
-      "name": "TicketClassifier",
-      "role": "Classify and categorize incoming tickets",
-      "capabilities": ["nlp", "classification", "priority_scoring"],
-      "estimated_complexity": "medium"
-    },
-    {
-      "name": "EscalationManager",
-      "role": "Handle ticket escalation and routing",
-      "capabilities": ["rule_engine", "notification", "workflow"],
-      "estimated_complexity": "low"
-    }
-  ],
-  "architecture_recommendations": {
-    "pattern": "pipeline",
-    "communication": "message_queue",
-    "state_management": "distributed"
-  }
-}
-```
-
-#### Code Generation
-```http
-POST /api/v1/aop-designer/generate-code
-Content-Type: application/json
-
-{
-  "agent_specification": {
-    "name": "TicketClassifier",
-    "type": "classifier",
-    "input_channels": ["webhook", "email"],
-    "output_channels": ["ticket_queue"],
-    "capabilities": ["nlp", "priority_scoring"]
+  "title": "Customer Onboarding Process",
+  "description": "Create process for automated customer onboarding with email notifications and CRM integration",
+  "context": {
+    "business_domain": "SaaS",
+    "complexity": "medium",
+    "integrations": ["salesforce", "mailchimp", "stripe"],
+    "team_size": "5",
+    "expected_volume": "100 customers/month"
   },
-  "target_language": "python",
-  "framework": "voyager-agent",
-  "style_preferences": {
-    "async": true,
-    "typing": "strict",
-    "documentation": "comprehensive"
+  "metadata": {
+    "user_id": "user_123",
+    "project_id": "proj_456",
+    "session_type": "process_development"
   }
 }
 
 Response: 201 Created
 {
-  "generation_id": "gen-uuid",
-  "files": [
-    {
-      "filename": "ticket_classifier.py",
-      "content": "# Generated TicketClassifier Agent\nclass TicketClassifier(VoyagerAgent):\n    ...",
-      "file_type": "python"
-    },
-    {
-      "filename": "test_ticket_classifier.py",
-      "content": "# Generated tests for TicketClassifier\nimport pytest\n...",
-      "file_type": "python_test"
-    }
-  ],
-  "documentation": "Generated agent for ticket classification with NLP capabilities...",
-  "next_steps": [
-    "Review generated code",
-    "Customize business logic",
-    "Run tests",
-    "Deploy to staging"
-  ]
+  "thread_id": "thread_proc_789",
+  "websocket_url": "wss://api.voyager.com/v1/threads/thread_proc_789/stream",
+  "agent_name": "process-designer-agent",
+  "status": "active",
+  "current_process_content": "",
+  "created_at_ms": 1699123456789
 }
 ```
 
-## Agent Design Patterns
+#### Get Process Development Status
+```http
+GET /api/v1/process-designer/threads/{thread_id}
 
-### Communication Patterns
-
-#### Message Passing Pattern
-```python
-# Example generated code for message passing
-class MessageBasedAgent(VoyagerAgent):
-    async def handle_message(self, message: AgentMessage):
-        # Process message
-        result = await self.process(message.payload)
-        
-        # Send response
-        await self.send_message(
-            target=message.sender,
-            payload=result,
-            message_type="response"
-        )
+Response: 200 OK
+{
+  "thread_id": "thread_proc_789",
+  "title": "Customer Onboarding Process",
+  "current_process_content": "# Customer Onboarding Process\n\n## Overview\nAutomates customer onboarding with CRM integration...\n\n## Steps\n### Step 1: Customer Registration\n...",
+  "status": "active",
+  "patch_count": 15,
+  "last_patch_at_ms": 1699123456890,
+  "created_at_ms": 1699123456789,
+  "updated_at_ms": 1699123456890
+}
 ```
 
-#### Event-Driven Pattern
-```python
-# Example generated code for event-driven agents
-class EventDrivenAgent(VoyagerAgent):
-    @event_handler("ticket.created")
-    async def on_ticket_created(self, event: TicketCreatedEvent):
-        # Handle ticket creation event
-        classification = await self.classify_ticket(event.ticket)
-        
-        # Emit classification event
-        await self.emit_event(
-            "ticket.classified",
-            TicketClassifiedEvent(
-                ticket_id=event.ticket.id,
-                classification=classification
-            )
-        )
+#### List Process Development Threads
+```http
+GET /api/v1/process-designer/threads?page_size=10&page_token=abc123
+
+Response: 200 OK
+{
+  "threads": [
+    {
+      "thread_id": "thread_proc_789",
+      "title": "Customer Onboarding Process",
+      "status": "active",
+      "created_at_ms": 1699123456789,
+      "updated_at_ms": 1699123456890
+    },
+    {
+      "thread_id": "thread_proc_790",
+      "title": "Invoice Processing Automation",
+      "status": "completed",
+      "created_at_ms": 1699123456700,
+      "updated_at_ms": 1699123456800
+    }
+  ],
+  "next_page_token": "def456"
+}
 ```
 
-### Coordination Patterns
+#### WebSocket Chat Interface with Live Patching
+```javascript
+// Connect to process development chat
+const ws = new WebSocket('wss://api.voyager.com/v1/threads/thread_proc_789/stream');
 
-#### Pipeline Pattern
-```yaml
-# Generated pipeline configuration
-agent_pipeline:
-  name: "ticket_processing_pipeline"
-  stages:
-    - agent: "TicketReceiver"
-      timeout: 5s
-    - agent: "TicketClassifier"
-      timeout: 30s
-      retry_policy:
-        max_attempts: 3
-        backoff: exponential
-    - agent: "TicketRouter"
-      timeout: 10s
-  error_handling:
-    strategy: "circuit_breaker"
-    fallback_agent: "ErrorHandler"
+// Send user message
+ws.send(JSON.stringify({
+  thread_id: "thread_proc_789",
+  role: "USER",
+  content: "I need to add error handling for API timeouts and retry logic",
+  client_msg_id: "msg-456"
+}));
+
+// Receive agent response with live process patches
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  
+  if (message.mini_process && message.mini_process.patches) {
+    // Apply live patches to process content
+    message.mini_process.patches.forEach(patch => {
+      applyProcessPatch(patch);
+    });
+  }
+  
+  // Display agent message
+  displayMessage(message.content);
+  // message.content = "I'll add comprehensive error handling. Let me update the process..."
+};
+
+// Example patch application
+function applyProcessPatch(patch) {
+  switch(patch.operation) {
+    case 'insert':
+      insertContentAtLocation(patch.location, patch.content);
+      break;
+    case 'update':
+      updateContent(patch.location, patch.old_content, patch.new_content);
+      break;
+    case 'delete':
+      deleteContent(patch.location, patch.content);
+      break;
+    case 'append':
+      appendContent(patch.location, patch.content);
+      break;
+  }
+}
 ```
+
+#### Process Export
+```http
+GET /api/v1/process-designer/threads/{thread_id}/export?format=markdown
+
+Response: 200 OK
+Content-Type: text/markdown
+
+# Customer Onboarding Process
+
+## Overview
+Automates customer onboarding with CRM integration and email notifications...
+
+## Implementation
+```spy
+define CustomerOnboardingProcess {
+  onboard_customer(customer_data) {
+    # Validate customer information
+    validation_result = validate_customer_data(customer_data)
+    
+    # Create CRM record
+    crm_record = salesforce.create_contact(customer_data)
+    
+    # Send welcome email
+    mailchimp.send_welcome_email(customer_data.email)
+    
+    # Setup billing
+    stripe.create_customer(customer_data)
+    
+    return OnboardingResult(crm_record.id, "success")
+  }
+}
+```
+```
+
+## Process Patching System
+
+### Patch Structure
+```json
+{
+  "mini_process": {
+    "patches": [
+      {
+        "operation": "insert",
+        "location": "## Error Handling",
+        "content": "### API Timeout Handling\n- Implement retry logic with exponential backoff\n- Set maximum timeout of 30 seconds\n- Log timeout events for monitoring"
+      },
+      {
+        "operation": "update", 
+        "location": "## Prerequisites",
+        "old_content": "- API access credentials",
+        "new_content": "- API access credentials\n- Timeout configuration settings\n- Retry policy configuration"
+      },
+      {
+        "operation": "append",
+        "location": "## Implementation",
+        "content": "\n### Error Recovery\n```spy\ndefine ErrorHandler {\n  handle_api_timeout(request) {\n    retry_with_backoff(request, max_attempts=3)\n  }\n}\n```"
+      }
+    ],
+    "process_state": {
+      "completion_percentage": 75,
+      "sections_completed": ["Overview", "Prerequisites", "Steps"],
+      "sections_pending": ["Error Handling", "Monitoring"],
+      "total_patches_applied": 12
+    }
+  }
+}
+```
+
+### Patch Operations
+- **insert**: Add new content at specified location in process
+- **update**: Replace existing content with new content
+- **delete**: Remove content from specified location
+- **append**: Add content to end of specified section
+
+### Live Patching Flow
+1. **User sends message** describing what they want
+2. **Process Designer agent** analyzes current process state
+3. **Agent generates patches** to update process content
+4. **Patches streamed to UI** and applied in real-time
+5. **Process view updates live** as user watches
+6. **Conversation continues** with updated process context
 
 ## Integration Points
 
-### With Threads Service
-- **Chat Interface**: Provides chat-based interface for design consultation
-- **Conversation Context**: Maintains conversation context for ongoing design sessions
-- **User Preferences**: Integrates with user preferences and design history
-- **Collaboration**: Supports collaborative design sessions with multiple users
+### With Thread Manager
+- **Thread Creation**: Create threads for process development sessions
+- **Message Streaming**: Stream process patches and conversation through Thread Manager
+- **Process Persistence**: Store process development progress in thread messages
+- **WebSocket Coordination**: Coordinate WebSocket connections for real-time patching
 
-### With BDK (Book Development Kit)
-- **Agent Deployment**: Integrates with BDK for agent deployment and lifecycle management
-- **Configuration Management**: Provides agent configuration templates for BDK
-- **Testing Integration**: Integrates with BDK testing frameworks
-- **Version Control**: Supports version control for agent designs and implementations
-
-### With Other Agent Services
-- **Spy Mapper Integration**: Collaborates with Spy Mapper for process mapping
-- **Spy Writer Integration**: Collaborates with Spy Writer for code generation
-- **Pattern Sharing**: Shares design patterns and best practices with other agent services
+### With Agent Service
+- **Process Designer Agent**: Use specialized Process Designer agent for conversations
+- **Agent Configuration**: Configure Process Designer agent with process development capabilities
+- **Mini-Process Generation**: Generate mini_processes with process patches and SPy code
+- **Context Management**: Maintain process development context within agent conversations
 
 ### With LLM Services
-- **AI-Powered Analysis**: Uses LLM services for intelligent requirement analysis
-- **Code Generation**: Leverages LLM for advanced code generation capabilities
-- **Natural Language Processing**: Uses NLP capabilities for requirement understanding
-- **Documentation Generation**: Uses LLM for generating comprehensive documentation
+- **AI-Powered Generation**: Leverage LLM services for intelligent process generation
+- **Natural Language Processing**: Process and understand user requirements
+- **Code Generation**: Generate SPy code implementation alongside process documentation
+- **Context Understanding**: Understand conversation context for coherent process development
+
+### With Spy Mapper
+- **Process Analysis**: Use process maps to inform process creation
+- **Workflow Understanding**: Understand existing workflows for process optimization
+- **Gap Analysis**: Identify gaps between current and desired processes
+- **Process Optimization**: Optimize processes during development
 
 ## Performance and Scaling
 
-### Response Time Optimization
-- **Pattern Caching**: Cache frequently used design patterns and templates
-- **Code Template Cache**: Cache generated code templates for reuse
-- **Parallel Processing**: Process multiple design requests in parallel
-- **Incremental Generation**: Support incremental code generation and updates
+### Real-time Performance
+- **Streaming Optimization**: Optimize streaming response times for chat interface
+- **Patch Application**: Efficient patch application for live process updates
+- **Context Management**: Efficient management of conversation and process context
+- **Incremental Generation**: Generate process content incrementally for better user experience
 
 ### Scalability Features
-- **Horizontal Scaling**: Scale AOP Designer instances based on demand
-- **Load Balancing**: Distribute design requests across multiple instances
-- **Resource Management**: Efficient resource management for code generation
-- **Stateless Design**: Stateless design for easy scaling and deployment
-
-### Quality Assurance
-- **Design Validation**: Validate generated designs against best practices
-- **Code Quality Checks**: Perform code quality checks on generated code
-- **Pattern Verification**: Verify pattern applicability and correctness
-- **Performance Estimation**: Estimate performance characteristics of designed systems
+- **Session Isolation**: Isolate process development sessions for concurrent users
+- **Resource Management**: Manage computational resources for process generation
+- **Load Balancing**: Distribute chat sessions across multiple instances
+- **Horizontal Scaling**: Scale service instances based on demand
 
 ## Security Considerations
 
-### Code Security
-- **Secure Code Generation**: Generate secure code following security best practices
-- **Vulnerability Scanning**: Scan generated code for potential vulnerabilities
-- **Access Control**: Control access to sensitive design patterns and templates
-- **Audit Logging**: Log all design activities and code generation requests
+### Chat Security
+- **Message Encryption**: Encrypt chat messages in transit and at rest
+- **Session Authentication**: Authenticate and authorize process development sessions
+- **Access Control**: Control access to sensitive process content
+- **Audit Logging**: Log all process development activities
 
-### Data Protection
-- **Requirements Privacy**: Protect sensitive requirement information
-- **Design Confidentiality**: Ensure confidentiality of proprietary designs
-- **Code Ownership**: Maintain clear code ownership and licensing
-- **Intellectual Property**: Respect intellectual property rights in patterns and code
+### Process Security
+- **Process Confidentiality**: Protect proprietary process information
+- **Code Security**: Generate secure SPy code implementations
+- **Version Control**: Secure versioning of process documents
+- **Patch Validation**: Validate process patches for security and correctness
 
-## Monitoring and Observability
+## Monitoring and Analytics
 
-### Design Analytics
-- **Design Success Rate**: Track success rate of generated designs
-- **Pattern Usage**: Monitor usage of different design patterns
-- **User Satisfaction**: Track user satisfaction with design recommendations
-- **Code Quality Metrics**: Monitor quality metrics of generated code
+### Development Analytics
+- **Session Metrics**: Track process development session duration and success rates
+- **User Interaction**: Analyze user interaction patterns during process development
+- **Patch Analytics**: Monitor patch application success and performance
+- **Process Quality**: Monitor quality metrics of generated processes
 
-### Performance Monitoring
-- **Response Time**: Monitor design consultation response times
-- **Generation Speed**: Track code generation speed and efficiency
-- **Resource Usage**: Monitor computational resource usage
-- **Error Rates**: Track error rates and failure modes
+### Performance Metrics
+- **Response Time**: Track response times for chat interactions
+- **Patch Application Time**: Monitor time to apply process patches
+- **Generation Speed**: Track process content generation speed
+- **User Satisfaction**: Monitor user satisfaction with generated processes
 
-### Usage Analytics
-- **Popular Patterns**: Identify most popular design patterns and templates
-- **User Behavior**: Analyze user interaction patterns and preferences
-- **Feature Adoption**: Track adoption of new features and capabilities
-- **Improvement Opportunities**: Identify opportunities for service improvement
+Does this design capture what you're looking for? Should I proceed to update the process-designer.md file with this approach?
