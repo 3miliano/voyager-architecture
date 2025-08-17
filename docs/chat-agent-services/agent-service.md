@@ -17,10 +17,10 @@ Agent Service is a core service that provides comprehensive agent management cap
 - **Agent Deletion**: Remove agents and cleanup associated resources
 
 ### Book Integration Management
-- **Book Configuration**: Configure books with provider-specific credentials for agent access
-- **Credential Management**: Securely store and manage book credentials
-- **Provider Support**: Support multiple book providers (S3, Atlas, etc.)
-- **Access Control**: Control which books agents can access and call functions from
+- **Book Reference Management**: Manage references to books and available functions for agents
+- **BDK Integration**: Delegate credential management to BDK Library service
+- **Function Access Control**: Control which book functions agents can call through SPy code
+- **Book Instance Coordination**: Coordinate with BDK for book instance availability
 
 ### Agent Configuration
 - **Restrictions Management**: Manage system/restrictions prompts for agents
@@ -69,11 +69,11 @@ The Agent Service Pod contains the core agent management functionality:
 - **Function**: Stores all agent data with secure credential management
 - **Features**: Encryption at rest, audit logging, configuration versioning
 
-#### Credential Manager
-- **Purpose**: Secure management of data source credentials
-- **Technology**: HashiCorp Vault integration or encrypted database storage
-- **Function**: Manages provider-specific credentials securely
-- **Capabilities**: Credential rotation, access logging, encryption
+#### BDK Integration Layer
+- **Purpose**: Interface with BDK Library for book and credential operations
+- **Technology**: gRPC client to BDK Library service
+- **Function**: Delegates book credential management to BDK
+- **Capabilities**: Book instance queries, credential validation, function discovery
 
 #### Agent Template Library
 - **Purpose**: Repository of agent templates and configurations
@@ -90,10 +90,10 @@ The Agent Service Pod contains the core agent management functionality:
 - **Agent Deletion**: Clean deletion with dependency checking
 
 ### Book Integration
-- **Multi-Provider Support**: Support various book providers (S3, Atlas, etc.)
-- **Credential Security**: Secure storage and management of book credentials
+- **Book Reference Management**: Manage references to book instances and available functions
+- **BDK Delegation**: Delegate all credential operations to BDK Library service
 - **Function Access Control**: Fine-grained control over which book functions agents can call
-- **Book Validation**: Validate book configurations and available functions
+- **Book Instance Validation**: Validate book instance availability through BDK
 
 ### Streaming Chat and Process Generation
 - **Real-time Streaming**: Stream agent responses to users in real-time through Thread Manager
@@ -119,18 +119,19 @@ sequenceDiagram
     participant Client as Client Application
     participant AgentSvc as Agent Service
     participant AgentStore as Agent Store
-    participant CredMgr as Credential Manager
+    participant BDK as BDK Library
     participant ThreadMgr as Thread Manager
 
     Client->>AgentSvc: CreateAgent request
-    AgentSvc->>CredMgr: Store book credentials securely
-    CredMgr->>AgentSvc: Confirm credential storage
-    AgentSvc->>AgentStore: Store agent configuration
+    AgentSvc->>BDK: Validate book instances exist
+    BDK->>AgentSvc: Confirm book instance availability
+    AgentSvc->>AgentStore: Store agent configuration (book references only)
     AgentStore->>AgentSvc: Return agent ID
     AgentSvc->>Client: Return Agent object
 
     Client->>AgentSvc: UpdateAgent request
-    AgentSvc->>CredMgr: Update credentials if changed
+    AgentSvc->>BDK: Validate new book instance references
+    BDK->>AgentSvc: Confirm book instances
     AgentSvc->>AgentStore: Update agent configuration
     AgentStore->>AgentSvc: Confirm update
     AgentSvc->>Client: Return updated Agent
@@ -194,9 +195,9 @@ import "threads/v1/threads.proto";
 message AgentRef { string name = 1; }
 
 message AgentBook {
-  string book_id = 1;                     // e.g., book identifier for function access
-  string provider = 2;                    // e.g., "s3", "atlas", etc.
-  google.protobuf.Struct credentials = 3; // provider-specific credentials (opaque)
+  string book_instance_id = 1;            // reference to BDK book instance
+  string book_name = 2;                   // book name for display
+  string customer_namespace = 3;          // customer namespace where book is deployed
   repeated string available_functions = 4; // functions this agent can call from this book
 }
 
@@ -315,24 +316,15 @@ Content-Type: application/json
     "name": "customer-support-agent",
     "books": [
       {
-        "book_id": "kb-customer-support",
-        "provider": "s3",
-        "credentials": {
-          "bucket": "voyager-kb",
-          "region": "us-west-2",
-          "access_key_id": "AKIA...",
-          "secret_access_key": "encrypted_secret"
-        },
+        "book_instance_id": "acme-kb-customer-support",
+        "book_name": "customer-support-book",
+        "customer_namespace": "customer-acme",
         "available_functions": ["search_knowledge_base", "get_article", "list_categories"]
       },
       {
-        "book_id": "faq-database",
-        "provider": "atlas",
-        "credentials": {
-          "connection_string": "mongodb+srv://...",
-          "database": "faq",
-          "collection": "questions"
-        },
+        "book_instance_id": "acme-faq-database",
+        "book_name": "faq-database-book", 
+        "customer_namespace": "customer-acme",
         "available_functions": ["search_faq", "get_question_by_id", "list_topics"]
       }
     ],
@@ -517,16 +509,16 @@ CREATE TABLE agents (
 CREATE TABLE agent_books (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     agent_name VARCHAR(255) NOT NULL,
-    book_id VARCHAR(255) NOT NULL,
-    provider VARCHAR(100) NOT NULL,
-    credentials_encrypted TEXT NOT NULL,
+    book_instance_id VARCHAR(255) NOT NULL, -- reference to BDK book instance
+    book_name VARCHAR(255) NOT NULL,
+    customer_namespace VARCHAR(255) NOT NULL, -- where book is deployed
     available_functions JSON NOT NULL, -- list of functions this agent can call
     created_at_ms BIGINT NOT NULL,
     updated_at_ms BIGINT NOT NULL,
     FOREIGN KEY (agent_name) REFERENCES agents(name) ON DELETE CASCADE,
-    UNIQUE KEY uk_agent_book (agent_name, book_id),
+    UNIQUE KEY uk_agent_book (agent_name, book_instance_id),
     INDEX idx_agent_books_agent (agent_name),
-    INDEX idx_agent_books_provider (provider)
+    INDEX idx_agent_books_namespace (customer_namespace)
 );
 ```
 
@@ -546,88 +538,38 @@ CREATE TABLE agent_audit_log (
 );
 ```
 
-## Book Providers
+## Book Instance References
 
-### S3 Book Provider
+The Agent Service stores references to book instances managed by BDK Library. All credential management is delegated to BDK.
+
+### Book Instance Reference Structure
 ```json
 {
-  "provider": "s3",
-  "credentials": {
-    "bucket": "my-knowledge-base",
-    "region": "us-west-2",
-    "access_key_id": "AKIA...",
-    "secret_access_key": "encrypted_secret",
-    "prefix": "documents/",
-    "format": "text" // text, json, pdf
-  },
+  "book_instance_id": "acme-kb-customer-support",
+  "book_name": "customer-support-book",
+  "customer_namespace": "customer-acme",
   "available_functions": [
-    "search_documents",
-    "get_document",
-    "list_files",
-    "upload_document"
+    "search_knowledge_base",
+    "get_article", 
+    "list_categories",
+    "create_ticket"
   ]
 }
 ```
 
-### Atlas (MongoDB) Book Provider
-```json
-{
-  "provider": "atlas",
-  "credentials": {
-    "connection_string": "mongodb+srv://...",
-    "database": "knowledge_base",
-    "collection": "documents",
-    "username": "agent_user",
-    "password": "encrypted_password"
-  },
-  "available_functions": [
-    "query_documents",
-    "find_by_id",
-    "aggregate_data",
-    "insert_document"
-  ]
-}
-```
+### Agent-Book Relationship
+- **Agent Service**: Stores book instance references and function permissions
+- **BDK Library**: Manages actual book deployments, credentials, and lifecycle
+- **Customer Namespaces**: Where book instances are deployed with credentials
+- **SPy Code Generation**: Agent Service generates SPy code that calls book functions
+- **Execution**: Jarvis executes SPy code, calls book functions using BDK-managed credentials
 
-### Vector Database Book Provider
-```json
-{
-  "provider": "pinecone",
-  "credentials": {
-    "api_key": "encrypted_api_key",
-    "environment": "us-west1-gcp",
-    "index_name": "knowledge-base",
-    "namespace": "customer-support"
-  },
-  "available_functions": [
-    "vector_search",
-    "upsert_vectors",
-    "delete_vectors",
-    "get_index_stats"
-  ]
-}
-```
-
-### Custom API Book Provider
-```json
-{
-  "provider": "custom_api",
-  "credentials": {
-    "base_url": "https://api.example.com/v1",
-    "api_key": "encrypted_api_key",
-    "headers": {
-      "User-Agent": "VoyagerAgent/1.0"
-    },
-    "timeout": 30
-  },
-  "available_functions": [
-    "get_user_data",
-    "create_ticket",
-    "search_records",
-    "update_status"
-  ]
-}
-```
+### Book Instance Discovery
+Agents can discover available book instances through BDK Library APIs:
+- Query available book instances in customer namespaces
+- Discover available functions for each book instance
+- Validate book instance health and availability
+- Get book instance metadata and capabilities
 
 ## Integration Points
 
@@ -658,19 +600,19 @@ CREATE TABLE agent_audit_log (
 - **Execution Results**: Receive execution results and format for user display
 - **Execution Coordination**: Manage execution lifecycle and status updates
 
-### With Vault (Credential Management)
-- **Secure Credential Storage**: Store book credentials securely
-- **Credential Rotation**: Support automatic credential rotation
-- **Access Logging**: Log all credential access for audit purposes
-- **Encryption Management**: Manage encryption keys for credential storage
+### With BDK Library
+- **Book Instance Management**: Query and validate book instances through BDK
+- **Credential Delegation**: Delegate all credential operations to BDK Library
+- **Book Discovery**: Discover available books and functions through BDK APIs
+- **Customer Namespace Coordination**: Coordinate with BDK for customer-specific deployments
 
 ## Security Considerations
 
-### Credential Security
-- **Encryption at Rest**: Encrypt all stored credentials using strong encryption
-- **Encryption in Transit**: Use TLS for all credential transmission
-- **Access Control**: Strict access control for credential management
-- **Audit Logging**: Complete audit trail of credential access
+### Book Reference Security
+- **Reference-Only Storage**: Agent Service stores only book instance references, not credentials
+- **BDK Delegation**: All credential security handled by BDK Library service
+- **Access Control**: Control which book functions agents can include in SPy code
+- **Audit Logging**: Complete audit trail of book instance access and function calls
 
 ### Agent Security
 - **Prompt Injection Protection**: Protect against prompt injection attacks
