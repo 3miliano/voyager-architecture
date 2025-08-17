@@ -52,7 +52,7 @@ The Agent Service Pod contains the core agent management functionality:
 
 **APIs**:
 - **gRPC**: Full agents.proto implementation for agent operations
-- **gRPC Streaming**: Real-time chat interface for agent conversations
+- **gRPC Internal**: ProcessMessage and ExecuteMiniProcess for Thread Manager coordination
 - **REST via Gateway**: `/api/v1/agents` endpoints for HTTP access
 
 ##### Agent Service gRPC Transcoder
@@ -216,10 +216,10 @@ service Agents {
   rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
   rpc StartAgentThread(StartAgentThreadRequest) returns (StartAgentThreadResponse);
   
-  // Streaming chat interface
-  rpc Chat(stream AgentChatMessage) returns (stream AgentChatMessage);
+  // Internal streaming chat interface (called by Thread Manager)
+  rpc ProcessMessage(ProcessMessageRequest) returns (stream AgentResponseChunk);
   
-  // Agent-specific actions
+  // Agent-specific actions (called by Thread Manager)
   rpc ExecuteMiniProcess(ExecuteMiniProcessRequest) returns (ExecuteMiniProcessResponse);
 }
 ```
@@ -251,21 +251,29 @@ message StartAgentThreadRequest {
 }
 message StartAgentThreadResponse { threads.v1.Thread thread = 1; }
 
-// Streaming chat messages
-message AgentChatMessage {
+// Internal message processing (Thread Manager → Agent Service)
+message ProcessMessageRequest {
   string thread_id = 1;
-  threads.v1.Role role = 2; // USER | ASSISTANT | SYSTEM
-  string content = 3;       // markdown/plain text
-  string client_msg_id = 4; // optional client-generated id
-  google.protobuf.Struct mini_process = 5; // optional mini_process attachment
+  string agent_name = 2;     // which agent to use
+  threads.v1.Role role = 3;  // USER | ASSISTANT | SYSTEM
+  string content = 4;        // markdown/plain text
+  string client_msg_id = 5;  // optional client-generated id
+  map<string, string> context = 6; // conversation context
 }
 
-// Agent-specific actions
+message AgentResponseChunk {
+  string content = 1;        // partial response content
+  bool is_final = 2;         // true if this is the last chunk
+  google.protobuf.Struct mini_process = 3; // only set in final chunk
+}
+
+// Agent-specific actions (Thread Manager → Agent Service)
 message ExecuteMiniProcessRequest {
   string thread_id = 1;
   string message_id = 2;     // message containing the mini_process
-  string action = 3;         // "run", "edit", "validate", etc.
-  map<string, string> parameters = 4; // action-specific parameters
+  string agent_name = 3;     // which agent owns this mini_process
+  string action = 4;         // "run", "edit", "validate", etc.
+  map<string, string> parameters = 5; // action-specific parameters
 }
 message ExecuteMiniProcessResponse {
   string execution_id = 1;
@@ -274,6 +282,26 @@ message ExecuteMiniProcessResponse {
   string message = 4;        // human-readable status message
 }
 ```
+
+### API Architecture
+
+The Agent Service exposes different APIs for different use cases:
+
+#### Public APIs (Client → Agent Service)
+- **Agent Management**: CreateAgent, GetAgent, UpdateAgent, DeleteAgent, ListAgents
+- **Thread Creation**: StartAgentThread (creates agent-bound threads)
+- **REST Gateway**: All management operations available via HTTP
+
+#### Internal APIs (Thread Manager → Agent Service)
+- **ProcessMessage**: Thread Manager forwards user messages for streaming response generation
+- **ExecuteMiniProcess**: Thread Manager forwards user actions (run, edit, validate) to agents
+
+#### Client Chat Flow
+1. **Client** → **Thread Manager** (PostMessage, StreamMessages, ExecuteAction)
+2. **Thread Manager** → **Agent Service** (ProcessMessage, ExecuteMiniProcess)
+3. **Agent Service** streams back to **Thread Manager** → **Client**
+
+This architecture ensures Thread Manager coordinates all chat interactions while Agent Service focuses on agent-specific logic.
 
 ### REST APIs (via Gateway)
 
