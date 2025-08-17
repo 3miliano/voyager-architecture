@@ -49,7 +49,7 @@ The Automation Troubleshooter is a specialized user persona who focuses on diagn
 - **Journal**: Access execution logs and telemetry data for analysis
 - **Jarvis**: Monitor SPy program execution and performance
 - **Jeeves**: Track run orchestration and execution metadata
-- **Herald**: Monitor external event processing and integration issues
+- **BDK**: Monitor webhook processing and book deployment issues
 - **Triage**: Access automated exception handling and retry mechanisms
 
 ### Analysis Tools

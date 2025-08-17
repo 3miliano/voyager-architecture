@@ -36,7 +36,7 @@ Envoy Gateway serves as the single entry point for all external traffic to the V
 #### HTTP Router
 - **Purpose**: Match host/path/method combinations to upstream clusters
 - **Technology**: Envoy HTTP routing with configurable per-route filters
-- **Targets**: Routes to Jeeves, Jarvis, Business Journal, Grimoire, Threads, Process Designer, SPy Mapper, SPy Writer, Herald, UOM, BDK, Object Service
+- **Targets**: Routes to Jeeves, Jarvis, Business Journal, Grimoire, Threads, Process Designer, SPy Mapper, SPy Writer, UOM, BDK, Object Service
 - **Features**: Advanced routing rules, traffic splitting, and load balancing
 
 #### Envoy Gateway Controller
@@ -115,7 +115,7 @@ sequenceDiagram
 - **Authentication**: `/auth/*` → UOM (Identity management)
 - **Users/Organizations**: `/users/*`, `/orgs/*`, `/workspaces/*` → UOM
 - **API Keys**: `/apikeys/*` → UOM
-- **Triggers**: `/triggers/*` → Herald (Event processing)
+- **Webhooks**: `/api/v1/webhooks/*` → BDK (Webhook routing)
 
 ### Book and Model Services
 - **Books**: `/api/v1/books/*` → BDK (Book management)

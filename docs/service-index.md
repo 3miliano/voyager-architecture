@@ -16,7 +16,7 @@ Complete index of all services in the Voyager architecture with quick reference 
 |---------|-----------|------------|---------|------|
 | [Jarvis](execution-services/jarvis.md) | `jarvis` | Rust, KEDA | SPy program execution engine (Python subset) | Kafka (`spy_control`) |
 | [Jeeves](execution-services/jeeves.md) | `jeeves` | Rust | Run orchestration and metadata | gRPC, REST |
-| [Guidance Center](execution-services/guidance.md) | `guidance` | Rust, LLM | Exception handling for Automation Troubleshooters | gRPC, REST |
+| [Guidance Center](execution-services/guidance.md) | `guidance` | Rust, LLM | Complex exception escalation hub | gRPC, REST |
 
 ## Data Services
 
@@ -49,8 +49,7 @@ Complete index of all services in the Voyager architecture with quick reference 
 
 | Service | Namespace | Technology | Purpose | APIs |
 |---------|-----------|------------|---------|------|
-| [Herald](integration-services/herald.md) | `herald` | Rust | External event ingestion | gRPC, REST |
-| [Triage](integration-services/triage.md) | `triage` | Rust | Automated exception handling | gRPC (internal) |
+| [Triage](integration-services/triage.md) | `triage` | Rust | First responder for execution exceptions | gRPC (internal) |
 
 ## Platform Services
 
@@ -79,9 +78,8 @@ Complete index of all services in the Voyager architecture with quick reference 
 - Business Journal (Fact Persistence)
 - Grimoire (English Process Specifications)
 - Threads (AI Chat Orchestration)
-- Guidance Center (Exception Handling for Troubleshooters)
-- Herald (Integration)
-- Triage (Exception Handling)
+- Guidance Center (Complex Exception Escalation Hub)
+- Triage (First Responder for All Exceptions)
 - UOM (Identity)
 - BDK (Python Book Skill Collections)
 - Bifrost (Network Management)
@@ -122,7 +120,10 @@ Complete index of all services in the Voyager architecture with quick reference 
 1. Client → Envoy Gateway → Grimoire → Process Database (English specifications)
 
 #### External Integration Path
-1. External System → Herald → Jeeves → Jarvis
+1. External System → BDK → Jeeves → Jarvis
+
+#### Exception Handling Path
+1. Execution Exception → Triage (Automated Recovery) → Guidance (Human Intervention)
 
 ### API Patterns
 

@@ -6,15 +6,17 @@
 
 ## Overview
 
-Triage provides intelligent automated exception handling for failed process executions. It analyzes execution failures, matches them against troubleshooting guides, and generates server-only Spy patches to automatically recover from common failure scenarios.
+Triage serves as the first responder for all execution exceptions in the Voyager platform. It provides intelligent automated exception handling for failed process executions, analyzes execution failures, matches them against troubleshooting guides, and generates server-only Spy patches to automatically recover from common failure scenarios. When automatic recovery is not possible, Triage escalates exceptions to the Guidance Center for human intervention.
 
 ## Responsibilities
 
+- **Primary Exception Handler**: Act as first responder for all execution exceptions
 - Consume `runs.status.v1` events for `EXCEPTION` status monitoring
 - Fetch canonical Process definitions and troubleshooting entries from Grimoire
 - Match exception context to relevant troubleshooting guides and recovery procedures
 - Generate server-only Spy patches for automatic failure recovery
 - Request new executions with patches via Jeeves for automatic retry
+- **Escalation Management**: Escalate unresolvable exceptions to Guidance Center
 - Maintain idempotency for exception handling and patch generation
 
 ## Architecture
@@ -31,6 +33,7 @@ Triage provides intelligent automated exception handling for failed process exec
 - **gRPC (internal)**:
   - `ProposePatch`: Generate patches for exception scenarios
   - `HandleException`: Process exception events and coordinate recovery
+  - `EscalateException`: Escalate unresolvable exceptions to Guidance Center
 - **REST**: None (internal service only)
 
 ## Key Features
@@ -53,6 +56,12 @@ Triage provides intelligent automated exception handling for failed process exec
 - **Solution Application**: Automatically apply known solutions to exceptions
 - **Learning**: Learn from successful recoveries to improve future handling
 
+### Escalation Management
+- **Escalation Criteria**: Define criteria for escalating exceptions to human intervention
+- **Context Preservation**: Preserve complete exception context for escalated cases
+- **Escalation Tracking**: Track escalation patterns and resolution outcomes
+- **Feedback Integration**: Integrate human resolution feedback for improved automation
+
 ### Security and Isolation
 - **Server-Only Operation**: Never expose spy_code to UI or external systems
 - **Patch Isolation**: Server-only patches with no client visibility
@@ -67,6 +76,7 @@ sequenceDiagram
     participant Triage
     participant Grimoire
     participant Jeeves
+    participant Guidance as Guidance Center
     participant Monitoring
 
     Kafka->>Triage: runs.status.v1 (EXCEPTION status)
@@ -93,12 +103,14 @@ sequenceDiagram
                 Triage->>Monitoring: Log successful recovery
             else Recovery failed
                 Triage->>Monitoring: Log failed recovery
-                Triage->>Triage: Escalate to human intervention
+                Triage->>Guidance: EscalateException with context
+                Guidance->>Triage: Escalation acknowledged
             end
         end
     else No matching guide
         Triage->>Monitoring: Log unhandled exception
-        Triage->>Triage: Escalate to human intervention
+        Triage->>Guidance: EscalateException with context
+        Guidance->>Triage: Escalation acknowledged
     end
 ```
 
@@ -236,6 +248,7 @@ def generate_patch(exception_context, troubleshooting_guide):
 service Triage {
   rpc ProposePatch(ProposePatchRequest) returns (ProposePatchResponse);
   rpc HandleException(HandleExceptionRequest) returns (HandleExceptionResponse);
+  rpc EscalateException(EscalateExceptionRequest) returns (EscalateExceptionResponse);
 }
 
 message ProposePatchRequest {
@@ -267,6 +280,23 @@ message ExceptionContext {
   map<string, string> execution_context = 4;
   string environment = 5;
 }
+
+message EscalateExceptionRequest {
+  string exception_id = 1;
+  string run_id = 2;
+  string execution_id = 3;
+  ExceptionContext context = 4;
+  string escalation_reason = 5;
+  repeated string attempted_solutions = 6;
+  string troubleshooter_id = 7; // Optional: preferred troubleshooter
+}
+
+message EscalateExceptionResponse {
+  string escalation_id = 1;
+  bool accepted = 2;
+  string assigned_troubleshooter_id = 3;
+  google.protobuf.Timestamp escalated_at = 4;
+}
 ```
 
 ## Integration Points
@@ -288,6 +318,12 @@ message ExceptionContext {
 - **Idempotency**: Uses idempotency keys for duplicate prevention
 - **Parameter Passing**: Passes patch parameters and context
 - **Status Monitoring**: Monitors execution status for recovery validation
+
+### With Guidance Center
+- **Exception Escalation**: Escalates unresolvable exceptions for human intervention
+- **Context Transfer**: Transfers complete exception context and attempted solutions
+- **Resolution Feedback**: Receives feedback on human resolution outcomes
+- **Learning Integration**: Integrates human solutions into automated recovery patterns
 
 ## Security Considerations
 

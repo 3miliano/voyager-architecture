@@ -6,16 +6,17 @@
 
 ## Overview
 
-Guidance Center serves as the exception handling hub for the Voyager platform where executions that have hit exceptions are shown and handled by Automation Troubleshooters. It provides intelligent guidance for process execution issues, automated problem resolution, and comprehensive process intelligence through advanced AI analysis and planning capabilities.
+Guidance Center serves as the escalation hub for complex execution exceptions that cannot be resolved automatically by Triage. It provides intelligent guidance for process execution issues, AI-powered analysis, and comprehensive troubleshooting support for Automation Troubleshooters. Guidance Center receives pre-analyzed exceptions from Triage along with attempted solutions, enabling focused human intervention on the most challenging issues.
 
 ## Responsibilities
 
-- **Exception Processing**: Handle execution exceptions and failures for Automation Troubleshooter review
-- **AI-Powered Analysis**: Provide AI-powered analysis and resolution recommendations for execution issues
-- **Troubleshooter Interface**: Present failed executions to Automation Troubleshooters for resolution
-- **Automated Problem Resolution**: Automatically resolve common issues and guide complex problem-solving
-- **Context Gathering**: Collect and analyze relevant context from past runs and system state
-- **Resolution Tracking**: Track resolution effectiveness and learn from outcomes
+- **Escalated Exception Processing**: Handle complex exceptions escalated from Triage for human review
+- **AI-Powered Analysis**: Provide advanced AI analysis and resolution recommendations beyond automated capabilities
+- **Troubleshooter Interface**: Present escalated exceptions to Automation Troubleshooters with Triage context
+- **Complex Problem Resolution**: Guide resolution of complex issues that automated systems cannot handle
+- **Enhanced Context Analysis**: Build upon Triage analysis with deeper AI-powered insights
+- **Resolution Tracking**: Track resolution effectiveness and provide feedback to Triage for learning
+- **Knowledge Transfer**: Transfer successful human resolutions back to Triage for automation
 
 ## Architecture
 
@@ -76,42 +77,41 @@ Guidance Center serves as the exception handling hub for the Voyager platform wh
 
 ```mermaid
 sequenceDiagram
-    participant Jarvis
-    participant Kafka
+    participant Triage
     participant GuidanceCenter as Guidance Center
     participant BusinessJournal as Business Journal
     participant LiteLLM as LiteLLM Proxy
     participant AutomationTroubleshooter as Automation Troubleshooter
 
-    Jarvis->>Kafka: Execution exception event
-    Kafka->>GuidanceCenter: Exception notification
-    GuidanceCenter->>BusinessJournal: Retrieve execution context
+    Triage->>GuidanceCenter: EscalateException with context and attempted solutions
+    GuidanceCenter->>Triage: Acknowledge escalation
+    
+    GuidanceCenter->>BusinessJournal: Retrieve additional execution context
     BusinessJournal->>GuidanceCenter: Historical execution data
     
-    GuidanceCenter->>LiteLLM: Analyze exception with AI
-    LiteLLM->>GuidanceCenter: AI-generated analysis and suggestions
+    GuidanceCenter->>LiteLLM: Analyze complex exception with AI
+    LiteLLM->>GuidanceCenter: Advanced AI analysis and suggestions
     
-    GuidanceCenter->>AutomationTroubleshooter: Present exception for review
-    AutomationTroubleshooter->>GuidanceCenter: Review exception and context
+    GuidanceCenter->>AutomationTroubleshooter: Present escalated exception with full context
+    AutomationTroubleshooter->>GuidanceCenter: Review exception and Triage attempts
     
-    alt Automated Resolution Available
-        AutomationTroubleshooter->>GuidanceCenter: Approve automated resolution
-        GuidanceCenter->>Jarvis: Execute automated resolution
-    else Manual Resolution Required
+    alt Human Resolution Successful
         AutomationTroubleshooter->>GuidanceCenter: Provide manual resolution
-        GuidanceCenter->>GuidanceCenter: Learn from manual resolution
+        GuidanceCenter->>BusinessJournal: Record resolution outcome
+        GuidanceCenter->>Triage: Share resolution for learning
+    else Further Escalation Required
+        AutomationTroubleshooter->>GuidanceCenter: Escalate to senior support
+        GuidanceCenter->>GuidanceCenter: Handle escalation workflow
     end
-    
-    GuidanceCenter->>BusinessJournal: Record resolution outcome
 ```
 
 ## Integration Points
 
-### With Jarvis (Execution Engine)
-- **Exception Events**: Receives execution exception events via Kafka
-- **Context Retrieval**: Gathers execution context and error details
-- **Resolution Coordination**: Coordinates automated resolution attempts
-- **Feedback Loop**: Provides feedback on resolution effectiveness
+### With Triage (Primary Integration)
+- **Exception Escalation**: Receives escalated exceptions that automated recovery couldn't resolve
+- **Context Inheritance**: Inherits complete exception analysis and attempted solutions from Triage
+- **Resolution Feedback**: Provides resolution outcomes back to Triage for learning
+- **Knowledge Transfer**: Transfers successful human resolutions to improve Triage automation
 
 ### With Business Journal
 - **Historical Analysis**: Access historical run data for pattern analysis and context
@@ -138,11 +138,13 @@ sequenceDiagram
 #### Exception Management
 ```protobuf
 service GuidanceCenter {
-  rpc ListExceptions(ListExceptionsRequest) returns (ListExceptionsResponse);
+  rpc AcceptEscalation(AcceptEscalationRequest) returns (AcceptEscalationResponse);
+  rpc ListEscalatedExceptions(ListEscalatedExceptionsRequest) returns (ListEscalatedExceptionsResponse);
   rpc GetExceptionDetails(GetExceptionDetailsRequest) returns (GetExceptionDetailsResponse);
   rpc AnalyzeException(AnalyzeExceptionRequest) returns (AnalyzeExceptionResponse);
   rpc ResolveException(ResolveExceptionRequest) returns (ResolveExceptionResponse);
   rpc GetResolutionHistory(GetResolutionHistoryRequest) returns (GetResolutionHistoryResponse);
+  rpc ShareResolution(ShareResolutionRequest) returns (ShareResolutionResponse);
 }
 
 message ListExceptionsRequest {
@@ -223,17 +225,49 @@ enum ResolutionType {
   GUIDED = 1;
   MANUAL = 2;
 }
+
+message AcceptEscalationRequest {
+  string escalation_id = 1;
+  string exception_id = 2;
+  string run_id = 3;
+  string execution_id = 4;
+  ExceptionContext context = 5;
+  repeated string attempted_solutions = 6;
+  string escalation_reason = 7;
+  string preferred_troubleshooter_id = 8;
+}
+
+message AcceptEscalationResponse {
+  bool accepted = 1;
+  string assigned_troubleshooter_id = 2;
+  string guidance_exception_id = 3;
+  google.protobuf.Timestamp accepted_at = 4;
+}
+
+message ShareResolutionRequest {
+  string exception_id = 1;
+  string resolution_id = 2;
+  ResolutionOutcome outcome = 3;
+  repeated ResolutionStep steps_taken = 4;
+  string lessons_learned = 5;
+}
+
+message ShareResolutionResponse {
+  bool accepted = 1;
+  string learning_id = 2;
+  google.protobuf.Timestamp shared_at = 3;
+}
 ```
 
 ## Exception Handling Workflow
 
-### Exception Processing Pipeline
-1. **Exception Detection**: Jarvis reports execution exceptions via Kafka
-2. **Context Gathering**: Collect comprehensive context around the exception
-3. **AI Analysis**: Analyze exception using AI models and historical patterns
-4. **Troubleshooter Assignment**: Present exception to appropriate Automation Troubleshooter
-5. **Resolution**: Guide troubleshooter through resolution process
-6. **Learning**: Capture resolution knowledge for future use
+### Escalated Exception Processing Pipeline
+1. **Escalation Reception**: Receive escalated exceptions from Triage with full context
+2. **Enhanced Context Analysis**: Build upon Triage analysis with deeper AI insights
+3. **Advanced AI Analysis**: Perform complex analysis using LLM capabilities
+4. **Troubleshooter Assignment**: Assign to appropriate Automation Troubleshooter
+5. **Guided Resolution**: Guide troubleshooter through complex resolution process
+6. **Knowledge Transfer**: Share successful resolutions back to Triage for automation
 
 ### Troubleshooter Interface
 - **Exception Dashboard**: Comprehensive dashboard showing pending and active exceptions

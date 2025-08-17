@@ -40,7 +40,6 @@ graph TB
         Grimoire[Grimoire - AI Process Management]
         Threads[Threads - AI Chat Orchestration]
         Guidance[Guidance Center - AI Troubleshooting]
-        Herald[Herald - Event Processing]
         Triage[Triage - Exception Handling]
     end
 
@@ -91,8 +90,8 @@ graph TB
     
     Guidance --> LLM
     Guidance --> Journal
-    Herald --> Jeeves
     Triage --> Jeeves
+    Triage --> Guidance
 
     Kafka --> Journal
     LLM --> Threads
@@ -166,7 +165,7 @@ exceptions:
 
 # Integration & Triggers
 integration:
-  - webhook_events          # Herald webhook processing
+  - webhook_events          # BDK webhook processing
   - external_triggers       # External system events
   - book_deployments        # BDK deployment events
 

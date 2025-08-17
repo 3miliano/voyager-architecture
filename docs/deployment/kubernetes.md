@@ -29,7 +29,6 @@ The Voyager platform is deployed entirely on Kubernetes, utilizing cloud-native 
 - **`threads`** - AI-powered chat orchestration and agent management
 
 #### Integration Services
-- **`herald`** - External event ingestion and trigger routing
 - **`triage`** - Automated exception handling and retry logic
 
 #### Platform Services

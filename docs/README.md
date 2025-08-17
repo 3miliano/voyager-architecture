@@ -13,7 +13,7 @@ This documentation provides a comprehensive overview of the Voyager microservice
 Core execution engine and orchestration
 - [Jarvis](execution-services/jarvis.md) - SPy program execution engine (Python subset)
 - [Jeeves](execution-services/jeeves.md) - Run orchestration and execution metadata
-- [Guidance Center](execution-services/guidance.md) - Exception handling for Automation Troubleshooters
+- [Guidance Center](execution-services/guidance.md) - Complex exception escalation hub for human troubleshooters
 
 #### 💾 [Data Services](data-services/)
 Fact processing, storage, and querying
@@ -35,9 +35,8 @@ Conversational interfaces and agent management
 - [SPy Writer](chat-agent-services/spy-writer.md) - SPy program (Python subset) generation
 
 #### 🔗 [Integration Services](integration-services/)
-External event processing and triggers
-- [Herald](integration-services/herald.md) - External event ingestion and trigger routing
-- [Triage](integration-services/triage.md) - Automated exception handling and retry logic
+External event processing and exception handling
+- [Triage](integration-services/triage.md) - First responder for all execution exceptions with automated recovery
 
 #### 🏗️ [Platform Services](platform-services/)
 Authentication, authorization, and system utilities
@@ -64,7 +63,6 @@ Infrastructure and deployment documentation
 - `books` - Shared book implementations
 - `threads` - Chat persistence
 - `objects` - Artifact storage and signed URLs
-- `herald` - Event ingestion
 - `triage` - Exception handling
 - `envoy-gateway-system` - Public edge
 - `user` - Identity management
