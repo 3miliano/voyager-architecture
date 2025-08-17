@@ -17,10 +17,10 @@ Agent Service is a core service that provides comprehensive agent management cap
 - **Agent Deletion**: Remove agents and cleanup associated resources
 
 ### Book Integration Management
-- **Book Reference Management**: Manage references to books and available functions for agents
-- **BDK Integration**: Delegate credential management to BDK Library service
+- **Book Reference Management**: Manage references to book definitions and available functions for agents
+- **BDK Integration**: Coordinate with BDK Library for book definitions and deployments
 - **Function Access Control**: Control which book functions agents can call through SPy code
-- **Book Instance Coordination**: Coordinate with BDK for book instance availability
+- **Dynamic Deployment**: BDK creates book deployments when SPy code calls book functions
 
 ### Agent Configuration
 - **Restrictions Management**: Manage system/restrictions prompts for agents
@@ -70,10 +70,10 @@ The Agent Service Pod contains the core agent management functionality:
 - **Features**: Encryption at rest, audit logging, configuration versioning
 
 #### BDK Integration Layer
-- **Purpose**: Interface with BDK Library for book and credential operations
+- **Purpose**: Interface with BDK Library for book definitions and deployments
 - **Technology**: gRPC client to BDK Library service
-- **Function**: Delegates book credential management to BDK
-- **Capabilities**: Book instance queries, credential validation, function discovery
+- **Function**: Validates book definitions and coordinates deployments
+- **Capabilities**: Book definition queries, function discovery, deployment coordination
 
 #### Agent Template Library
 - **Purpose**: Repository of agent templates and configurations
@@ -90,10 +90,10 @@ The Agent Service Pod contains the core agent management functionality:
 - **Agent Deletion**: Clean deletion with dependency checking
 
 ### Book Integration
-- **Book Reference Management**: Manage references to book instances and available functions
+- **Book Definition References**: Manage references to book definitions and available functions
 - **BDK Delegation**: Delegate all credential operations to BDK Library service
 - **Function Access Control**: Fine-grained control over which book functions agents can call
-- **Book Instance Validation**: Validate book instance availability through BDK
+- **Book Definition Validation**: Validate book definitions exist through BDK
 
 ### Streaming Chat and Process Generation
 - **Real-time Streaming**: Stream agent responses to users in real-time through Thread Manager
@@ -123,15 +123,15 @@ sequenceDiagram
     participant ThreadMgr as Thread Manager
 
     Client->>AgentSvc: CreateAgent request
-    AgentSvc->>BDK: Validate book instances exist
-    BDK->>AgentSvc: Confirm book instance availability
+    AgentSvc->>BDK: Validate book definitions exist
+    BDK->>AgentSvc: Confirm book definitions available
     AgentSvc->>AgentStore: Store agent configuration (book references only)
     AgentStore->>AgentSvc: Return agent ID
     AgentSvc->>Client: Return Agent object
 
     Client->>AgentSvc: UpdateAgent request
-    AgentSvc->>BDK: Validate new book instance references
-    BDK->>AgentSvc: Confirm book instances
+    AgentSvc->>BDK: Validate new book definition references
+    BDK->>AgentSvc: Confirm book definitions
     AgentSvc->>AgentStore: Update agent configuration
     AgentStore->>AgentSvc: Confirm update
     AgentSvc->>Client: Return updated Agent
@@ -154,6 +154,7 @@ sequenceDiagram
     participant Jeeves as Jeeves Service
     participant Jarvis as Jarvis Service
     participant Books as Book Services
+    participant CustomerNS as Customer Namespace
 
     Client->>ThreadMgr: PostMessage to agent thread
     ThreadMgr->>AgentSvc: Forward message to agent
@@ -173,8 +174,10 @@ sequenceDiagram
     ThreadMgr->>AgentSvc: Forward run action to agent service
     AgentSvc->>Jeeves: Send SPy code for execution
     Jeeves->>Jarvis: Execute SPy code with book function calls
-    Jarvis->>Books: Call book functions as needed
-    Books->>Jarvis: Return function results
+    Jarvis->>BDK: Request book function execution
+    BDK->>CustomerNS: Create/use book deployment
+    CustomerNS->>BDK: Execute function and return results
+    BDK->>Jarvis: Return function results
     Jarvis->>Jeeves: Return execution results
     Jeeves->>AgentSvc: Provide execution results
     AgentSvc->>ThreadMgr: Return execution results
@@ -195,10 +198,9 @@ import "threads/v1/threads.proto";
 message AgentRef { string name = 1; }
 
 message AgentBook {
-  string book_instance_id = 1;            // reference to BDK book instance
+  string book_id = 1;                     // reference to BDK book definition
   string book_name = 2;                   // book name for display
-  string customer_namespace = 3;          // customer namespace where book is deployed
-  repeated string available_functions = 4; // functions this agent can call from this book
+  repeated string available_functions = 3; // functions this agent can call from this book
 }
 
 message Agent {
@@ -318,15 +320,15 @@ Content-Type: application/json
     "name": "customer-support-agent",
     "books": [
       {
-        "book_instance_id": "acme-kb-customer-support",
+        "book_id": "customer-support-book-v1",
         "book_name": "customer-support-book",
-        "customer_namespace": "customer-acme",
+
         "available_functions": ["search_knowledge_base", "get_article", "list_categories"]
       },
       {
-        "book_instance_id": "acme-faq-database",
+        "book_id": "faq-database-book-v1",
         "book_name": "faq-database-book", 
-        "customer_namespace": "customer-acme",
+
         "available_functions": ["search_faq", "get_question_by_id", "list_topics"]
       }
     ],
@@ -340,15 +342,15 @@ Response: 201 Created
     "name": "customer-support-agent",
     "books": [
       {
-        "book_instance_id": "acme-kb-customer-support",
+        "book_id": "customer-support-book-v1",
         "book_name": "customer-support-book",
-        "customer_namespace": "customer-acme",
+
         "available_functions": ["search_knowledge_base", "get_article", "list_categories"]
       },
       {
-        "book_instance_id": "acme-faq-database",
+        "book_id": "faq-database-book-v1",
         "book_name": "faq-database-book", 
-        "customer_namespace": "customer-acme",
+
         "available_functions": ["search_faq", "get_question_by_id", "list_topics"]
       }
     ],
@@ -368,9 +370,9 @@ Response: 200 OK
     "name": "customer-support-agent",
     "books": [
       {
-        "book_instance_id": "acme-kb-customer-support",
+        "book_id": "customer-support-book-v1",
         "book_name": "customer-support-book",
-        "customer_namespace": "customer-acme",
+
         "available_functions": ["search_knowledge_base", "get_article", "list_categories"]
       }
     ],
@@ -390,9 +392,9 @@ Content-Type: application/json
     "name": "customer-support-agent",
     "books": [
       {
-        "book_instance_id": "acme-kb-customer-support-v2",
+        "book_id": "customer-support-book-v2",
         "book_name": "customer-support-book-v2",
-        "customer_namespace": "customer-acme",
+
         "available_functions": ["search_knowledge_base", "get_article", "list_categories", "create_ticket"]
       }
     ],
@@ -406,9 +408,9 @@ Response: 200 OK
     "name": "customer-support-agent",
     "books": [
       {
-        "book_instance_id": "acme-kb-customer-support-v2",
+        "book_id": "customer-support-book-v2",
         "book_name": "customer-support-book-v2",
-        "customer_namespace": "customer-acme",
+
         "available_functions": ["search_knowledge_base", "get_article", "list_categories", "create_ticket"]
       }
     ],
@@ -429,9 +431,8 @@ Response: 200 OK
       "name": "customer-support-agent",
       "books": [
         {
-          "book_instance_id": "acme-kb-customer-support",
-          "book_name": "customer-support-book",
-          "customer_namespace": "customer-acme"
+          "book_id": "customer-support-book-v1",
+          "book_name": "customer-support-book"
         }
       ],
       "restrictions_prompt": "You are a helpful customer support agent...",
@@ -442,9 +443,8 @@ Response: 200 OK
       "name": "technical-support-agent",
       "books": [
         {
-          "book_instance_id": "acme-technical-docs",
-          "book_name": "technical-docs-book",
-          "customer_namespace": "customer-acme"
+          "book_id": "technical-docs-book-v1",
+          "book_name": "technical-docs-book"
         }
       ],
       "restrictions_prompt": "You are a technical support specialist...",
@@ -488,15 +488,15 @@ Response: 201 Created
 
 #### Complete Agent Setup Workflow
 
-To create an agent that uses book instances, follow this workflow:
+To create an agent that uses book functions, follow this workflow:
 
-1. **First, create book instances via BDK Library**:
+1. **First, ensure book definitions exist via BDK Library**:
 ```http
-POST /api/v1/books/{book_id}/instances
-# (See BDK documentation for complete API)
+POST /api/v1/books
+# (See BDK documentation for book definition creation)
 ```
 
-2. **Then, create agent referencing those book instances**:
+2. **Then, create agent referencing those book definitions**:
 ```http
 POST /api/v1/agents
 {
@@ -504,9 +504,8 @@ POST /api/v1/agents
     "name": "my-agent",
     "books": [
       {
-        "book_instance_id": "customer-book-instance-123",
+        "book_id": "customer-support-book-v1",
         "book_name": "customer-support-book",
-        "customer_namespace": "customer-acme",
         "available_functions": ["search_kb", "create_ticket"]
       }
     ]
@@ -514,9 +513,10 @@ POST /api/v1/agents
 }
 ```
 
-3. **Agent Service validates book instance exists through BDK**
+3. **Agent Service validates book definition exists through BDK**
 4. **When agent generates SPy code, it calls book functions**
-5. **Jarvis executes SPy code using BDK-managed credentials**
+5. **BDK dynamically creates book deployment in customer namespace**
+6. **Jarvis executes SPy code, book functions execute in deployment**
 
 ## Database Schema
 
@@ -538,16 +538,15 @@ CREATE TABLE agents (
 CREATE TABLE agent_books (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     agent_name VARCHAR(255) NOT NULL,
-    book_instance_id VARCHAR(255) NOT NULL, -- reference to BDK book instance
+    book_id VARCHAR(255) NOT NULL, -- reference to BDK book definition
     book_name VARCHAR(255) NOT NULL,
-    customer_namespace VARCHAR(255) NOT NULL, -- where book is deployed
     available_functions JSON NOT NULL, -- list of functions this agent can call
     created_at_ms BIGINT NOT NULL,
     updated_at_ms BIGINT NOT NULL,
     FOREIGN KEY (agent_name) REFERENCES agents(name) ON DELETE CASCADE,
-    UNIQUE KEY uk_agent_book (agent_name, book_instance_id),
+    UNIQUE KEY uk_agent_book (agent_name, book_id),
     INDEX idx_agent_books_agent (agent_name),
-    INDEX idx_agent_books_namespace (customer_namespace)
+    INDEX idx_agent_books_book (book_id)
 );
 ```
 
@@ -567,16 +566,15 @@ CREATE TABLE agent_audit_log (
 );
 ```
 
-## Book Instance References
+## Book Definition References
 
-The Agent Service stores references to book instances managed by BDK Library. All credential management is delegated to BDK.
+The Agent Service stores references to book definitions managed by BDK Library. Book deployments are created dynamically when SPy code calls book functions.
 
-### Book Instance Reference Structure
+### Book Definition Reference Structure
 ```json
 {
-  "book_instance_id": "acme-kb-customer-support",
+  "book_id": "customer-support-book-v1",
   "book_name": "customer-support-book",
-  "customer_namespace": "customer-acme",
   "available_functions": [
     "search_knowledge_base",
     "get_article", 
@@ -587,18 +585,18 @@ The Agent Service stores references to book instances managed by BDK Library. Al
 ```
 
 ### Agent-Book Relationship
-- **Agent Service**: Stores book instance references and function permissions
-- **BDK Library**: Manages actual book deployments, credentials, and lifecycle
-- **Customer Namespaces**: Where book instances are deployed with credentials
+- **Agent Service**: Stores book definition references and function permissions
+- **BDK Library**: Manages book definitions and creates deployments on-demand
+- **Book Controller**: Creates book deployments in customer namespaces when needed
 - **SPy Code Generation**: Agent Service generates SPy code that calls book functions
-- **Execution**: Jarvis executes SPy code, calls book functions using BDK-managed credentials
+- **Dynamic Execution**: When SPy code calls book functions, BDK creates/uses deployments
 
-### Book Instance Discovery
-Agents can discover available book instances through BDK Library APIs:
-- Query available book instances in customer namespaces
-- Discover available functions for each book instance
-- Validate book instance health and availability
-- Get book instance metadata and capabilities
+### Book Definition Discovery
+Agents can discover available book definitions through BDK Library APIs:
+- Query available book definitions
+- Discover available functions for each book
+- Validate book definition exists and is accessible
+- Get book metadata and capabilities
 
 ## Integration Points
 
@@ -630,18 +628,18 @@ Agents can discover available book instances through BDK Library APIs:
 - **Execution Coordination**: Manage execution lifecycle and status updates
 
 ### With BDK Library
-- **Book Instance Management**: Query and validate book instances through BDK
-- **Credential Delegation**: Delegate all credential operations to BDK Library
+- **Book Definition Management**: Query and validate book definitions through BDK
+- **Dynamic Deployment Coordination**: BDK creates book deployments when SPy code calls functions
 - **Book Discovery**: Discover available books and functions through BDK APIs
-- **Customer Namespace Coordination**: Coordinate with BDK for customer-specific deployments
+- **Credential Management**: BDK handles all credential management in customer namespaces
 
 ## Security Considerations
 
 ### Book Reference Security
-- **Reference-Only Storage**: Agent Service stores only book instance references, not credentials
+- **Reference-Only Storage**: Agent Service stores only book definition references, not credentials
 - **BDK Delegation**: All credential security handled by BDK Library service
 - **Access Control**: Control which book functions agents can include in SPy code
-- **Audit Logging**: Complete audit trail of book instance access and function calls
+- **Audit Logging**: Complete audit trail of book definition access and function calls
 
 ### Agent Security
 - **Prompt Injection Protection**: Protect against prompt injection attacks
