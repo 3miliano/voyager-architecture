@@ -99,47 +99,65 @@ The Process Designer Pod contains the core process development functionality:
 
 ## Data Flow
 
-### Process Development Session Flow
+### Process Development Thread Creation
 
 ```mermaid
 sequenceDiagram
     participant User as User
     participant Client as Client Application
     participant ProcessDesigner as Process Designer Service
+    participant AgentSvc as Agent Service
+    participant ThreadMgr as Thread Manager
+
+    User->>Client: Request new process development
+    Client->>ProcessDesigner: CreateProcessThread request
+    ProcessDesigner->>AgentSvc: StartAgentThread with process-designer-agent
+    AgentSvc->>ThreadMgr: CreateThread with agent context
+    ThreadMgr->>AgentSvc: Return thread
+    AgentSvc->>ProcessDesigner: Return agent-bound thread
+    ProcessDesigner->>Client: Return thread_id and WebSocket URL
+    Client->>User: Display chat interface ready for process development
+```
+
+### Process Development Conversation and Live Patching
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant Client as Client Application
     participant ThreadMgr as Thread Manager
     participant AgentSvc as Agent Service
     participant ProcessBuilder as Process Builder Engine
     participant LLM as LLM Services
 
-    User->>Client: Request process development
-    Client->>ProcessDesigner: Create process development thread
-    ProcessDesigner->>AgentSvc: Create thread with Process Designer agent
-    AgentSvc->>ThreadMgr: Create agent-bound thread
-    ThreadMgr->>ProcessDesigner: Return thread info
-    ProcessDesigner->>Client: Return thread and WebSocket URL
-    
-    User->>Client: Connect to WebSocket
+    User->>Client: Connect to WebSocket for process development
     Client->>ThreadMgr: Establish WebSocket connection
     
     loop Process Development Conversation
-        User->>Client: Send message (requirements, feedback)
-        Client->>ThreadMgr: Post message to thread
-        ThreadMgr->>AgentSvc: Forward to Process Designer agent
+        User->>Client: Send message (requirements, feedback, questions)
+        Client->>ThreadMgr: PostMessage to process development thread
+        ThreadMgr->>AgentSvc: Forward message to process-designer-agent
         
-        AgentSvc->>ProcessBuilder: Generate process content/patches
-        ProcessBuilder->>LLM: Process user requirements
-        LLM->>ProcessBuilder: Return analysis and content
+        AgentSvc->>ProcessBuilder: Generate process content and patches
+        ProcessBuilder->>LLM: Analyze requirements and generate content
+        LLM->>ProcessBuilder: Return process content and SPy code
         ProcessBuilder->>AgentSvc: Return process patches
         
-        AgentSvc->>ThreadMgr: Stream response with process patches
-        ThreadMgr->>Client: Stream patches to UI
-        Client->>User: Apply live patches to process view
+        loop Streaming Response with Patches
+            AgentSvc->>AgentSvc: Generate response chunk with patches
+            AgentSvc->>ThreadMgr: Stream response chunk
+            ThreadMgr->>Client: Forward patch to UI
+            Client->>User: Apply live patch to process view
+        end
+        
+        AgentSvc->>ThreadMgr: Send complete message with mini_process
+        ThreadMgr->>ThreadMgr: Persist message with process state
     end
     
-    ProcessBuilder->>ProcessBuilder: Finalize complete process
-    AgentSvc->>ThreadMgr: Send final process document
-    ThreadMgr->>Client: Stream final process
-    Client->>User: Display complete process
+    User->>Client: Process development complete
+    Client->>ThreadMgr: Get final process content
+    ThreadMgr->>Client: Return complete process document
+    Client->>User: Display final process with implementation code
 ```
 
 ## API Specifications
@@ -183,21 +201,24 @@ message GetProcessThreadResponse {
 
 ### REST APIs (via Gateway)
 
-#### Process Development Session
+#### Create Process Development Thread
 ```http
 POST /api/v1/process-designer/threads
 Content-Type: application/json
 
 {
   "title": "Customer Onboarding Process",
-  "description": "Create process for automated customer onboarding",
+  "description": "Create process for automated customer onboarding with email notifications and CRM integration",
   "context": {
     "business_domain": "SaaS",
     "complexity": "medium",
-    "integrations": ["crm", "email", "billing"]
+    "integrations": ["salesforce", "mailchimp", "stripe"],
+    "team_size": "5",
+    "expected_volume": "100 customers/month"
   },
   "metadata": {
     "user_id": "user_123",
+    "project_id": "proj_456",
     "session_type": "process_development"
   }
 }
@@ -207,6 +228,8 @@ Response: 201 Created
   "thread_id": "thread_proc_789",
   "websocket_url": "wss://api.voyager.com/v1/threads/thread_proc_789/stream",
   "agent_name": "process-designer-agent",
+  "status": "active",
+  "current_process_content": "",
   "created_at_ms": 1699123456789
 }
 ```
@@ -219,14 +242,42 @@ Response: 200 OK
 {
   "thread_id": "thread_proc_789",
   "title": "Customer Onboarding Process",
-  "current_process_content": "# Customer Onboarding Process\n\n## Overview\n...",
+  "current_process_content": "# Customer Onboarding Process\n\n## Overview\nAutomates customer onboarding with CRM integration...\n\n## Steps\n### Step 1: Customer Registration\n...",
   "status": "active",
+  "patch_count": 15,
+  "last_patch_at_ms": 1699123456890,
   "created_at_ms": 1699123456789,
   "updated_at_ms": 1699123456890
 }
 ```
 
-#### WebSocket Chat Interface
+#### List Process Development Threads
+```http
+GET /api/v1/process-designer/threads?page_size=10&page_token=abc123
+
+Response: 200 OK
+{
+  "threads": [
+    {
+      "thread_id": "thread_proc_789",
+      "title": "Customer Onboarding Process",
+      "status": "active",
+      "created_at_ms": 1699123456789,
+      "updated_at_ms": 1699123456890
+    },
+    {
+      "thread_id": "thread_proc_790",
+      "title": "Invoice Processing Automation",
+      "status": "completed",
+      "created_at_ms": 1699123456700,
+      "updated_at_ms": 1699123456800
+    }
+  ],
+  "next_page_token": "def456"
+}
+```
+
+#### WebSocket Chat Interface with Live Patching
 ```javascript
 // Connect to process development chat
 const ws = new WebSocket('wss://api.voyager.com/v1/threads/thread_proc_789/stream');
@@ -235,19 +286,77 @@ const ws = new WebSocket('wss://api.voyager.com/v1/threads/thread_proc_789/strea
 ws.send(JSON.stringify({
   thread_id: "thread_proc_789",
   role: "USER",
-  content: "I need to add error handling for API timeouts",
+  content: "I need to add error handling for API timeouts and retry logic",
   client_msg_id: "msg-456"
 }));
 
-// Receive agent response with process patches
+// Receive agent response with live process patches
 ws.onmessage = (event) => {
   const message = JSON.parse(event.data);
-  if (message.mini_process) {
-    // Apply process patches to UI
-    applyProcessPatches(message.mini_process.patches);
+  
+  if (message.mini_process && message.mini_process.patches) {
+    // Apply live patches to process content
+    message.mini_process.patches.forEach(patch => {
+      applyProcessPatch(patch);
+    });
   }
-  // message.content = "I'll add error handling for API timeouts..."
+  
+  // Display agent message
+  displayMessage(message.content);
+  // message.content = "I'll add comprehensive error handling. Let me update the process..."
 };
+
+// Example patch application
+function applyProcessPatch(patch) {
+  switch(patch.operation) {
+    case 'insert':
+      insertContentAtLocation(patch.location, patch.content);
+      break;
+    case 'update':
+      updateContent(patch.location, patch.old_content, patch.new_content);
+      break;
+    case 'delete':
+      deleteContent(patch.location, patch.content);
+      break;
+    case 'append':
+      appendContent(patch.location, patch.content);
+      break;
+  }
+}
+```
+
+#### Process Export
+```http
+GET /api/v1/process-designer/threads/{thread_id}/export?format=markdown
+
+Response: 200 OK
+Content-Type: text/markdown
+
+# Customer Onboarding Process
+
+## Overview
+Automates customer onboarding with CRM integration and email notifications...
+
+## Implementation
+```spy
+define CustomerOnboardingProcess {
+  onboard_customer(customer_data) {
+    # Validate customer information
+    validation_result = validate_customer_data(customer_data)
+    
+    # Create CRM record
+    crm_record = salesforce.create_contact(customer_data)
+    
+    # Send welcome email
+    mailchimp.send_welcome_email(customer_data.email)
+    
+    # Setup billing
+    stripe.create_customer(customer_data)
+    
+    return OnboardingResult(crm_record.id, "success")
+  }
+}
+```
 ```
 
 ## Process Patching System
@@ -260,29 +369,43 @@ ws.onmessage = (event) => {
       {
         "operation": "insert",
         "location": "## Error Handling",
-        "content": "### API Timeout Handling\n- Implement retry logic with exponential backoff\n- Set maximum timeout of 30 seconds"
+        "content": "### API Timeout Handling\n- Implement retry logic with exponential backoff\n- Set maximum timeout of 30 seconds\n- Log timeout events for monitoring"
       },
       {
-        "operation": "update",
+        "operation": "update", 
         "location": "## Prerequisites",
         "old_content": "- API access credentials",
-        "new_content": "- API access credentials\n- Timeout configuration settings"
+        "new_content": "- API access credentials\n- Timeout configuration settings\n- Retry policy configuration"
+      },
+      {
+        "operation": "append",
+        "location": "## Implementation",
+        "content": "\n### Error Recovery\n```spy\ndefine ErrorHandler {\n  handle_api_timeout(request) {\n    retry_with_backoff(request, max_attempts=3)\n  }\n}\n```"
       }
     ],
-    "spy_code": {
-      "operation": "insert",
-      "location": "error_handlers",
-      "content": "define TimeoutHandler {\n  handle_timeout(request) {\n    retry_with_backoff(request, max_attempts=3)\n  }\n}"
+    "process_state": {
+      "completion_percentage": 75,
+      "sections_completed": ["Overview", "Prerequisites", "Steps"],
+      "sections_pending": ["Error Handling", "Monitoring"],
+      "total_patches_applied": 12
     }
   }
 }
 ```
 
 ### Patch Operations
-- **insert**: Add new content at specified location
+- **insert**: Add new content at specified location in process
 - **update**: Replace existing content with new content
 - **delete**: Remove content from specified location
-- **append**: Add content to end of section
+- **append**: Add content to end of specified section
+
+### Live Patching Flow
+1. **User sends message** describing what they want
+2. **Process Designer agent** analyzes current process state
+3. **Agent generates patches** to update process content
+4. **Patches streamed to UI** and applied in real-time
+5. **Process view updates live** as user watches
+6. **Conversation continues** with updated process context
 
 ## Integration Points
 
