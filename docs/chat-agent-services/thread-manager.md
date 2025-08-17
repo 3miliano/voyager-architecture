@@ -6,7 +6,7 @@
 
 ## Overview
 
-Thread Manager is a core service that provides comprehensive thread and message management capabilities for the Voyager platform's conversational AI systems. It handles the creation, persistence, and retrieval of chat threads and messages, supporting both real-time and historical chat interactions across all agent services.
+Thread Manager is a core infrastructure service that provides thread and message management capabilities for the Voyager platform's conversational AI systems. It acts as a pure persistence and streaming layer, handling thread creation, message storage, and real-time streaming while routing business logic to appropriate agent services.
 
 ## Responsibilities
 
@@ -107,11 +107,13 @@ The Thread Manager Pod contains the core thread and message management functiona
 ```mermaid
 sequenceDiagram
     participant Client as Client Application
-    participant ThreadMgr as Thread Manager
+    participant ThreadMgr as Thread Manager<br/>(Infrastructure)
     participant MsgStore as Message Store
     participant StreamEngine as Streaming Engine
     participant Subscribers as Connected Clients
-    participant AgentSvc as Agent Service
+    participant AgentSvc as Agent Service<br/>(AI Brain)
+    participant LLM as LLM Services
+    participant SpyMapper as Spy Mapper
 
     Client->>ThreadMgr: CreateThread request
     ThreadMgr->>MsgStore: Store thread data
@@ -123,7 +125,15 @@ sequenceDiagram
     MsgStore->>ThreadMgr: Confirm storage
     
     alt Agent Thread
-        ThreadMgr->>AgentSvc: Forward message to agent
+        ThreadMgr->>AgentSvc: Route message to agent (AI processing)
+        AgentSvc->>LLM: Request AI response generation
+        LLM->>AgentSvc: Return AI response
+        
+        opt Process Analysis Needed
+            AgentSvc->>SpyMapper: Request process analysis
+            SpyMapper->>AgentSvc: Return analysis results
+        end
+        
         loop Streaming Response
             AgentSvc->>ThreadMgr: Stream response chunk
             ThreadMgr->>StreamEngine: Forward chunk to stream
@@ -147,7 +157,8 @@ sequenceDiagram
     end
     
     Client->>ThreadMgr: User action (e.g., click "run" button)
-    ThreadMgr->>AgentSvc: Forward action to appropriate agent
+    ThreadMgr->>AgentSvc: Route action to appropriate agent
+    AgentSvc->>AgentSvc: Process action (AI logic)
     AgentSvc->>ThreadMgr: Return action results
     ThreadMgr->>StreamEngine: Broadcast results
     StreamEngine->>Client: Stream results to UI
@@ -408,30 +419,31 @@ CREATE TABLE messages (
 ## Integration Points
 
 ### With Agent Service
-- **Agent Thread Creation**: Support agent-specific thread creation
-- **Streaming Coordination**: Forward streaming agent responses to UI in real-time
-- **Action Routing**: Route user actions (run, edit, validate) to appropriate agents
-- **Agent Message Routing**: Route messages to appropriate agents
-- **Agent Context**: Maintain agent context within threads
-- **Multi-Agent Conversations**: Support conversations involving multiple agents
+- **Agent Thread Creation**: Support agent-specific thread creation and binding
+- **Message Routing**: Route user messages to appropriate agent services for AI processing
+- **Action Coordination**: Forward user actions (run, edit, validate) to appropriate agent services
+- **Response Streaming**: Stream agent-generated responses back to UI in real-time
+- **Agent Context Persistence**: Store agent context and conversation history in threads
+- **Multi-Agent Conversations**: Support conversations involving multiple agents through thread management
 
 ### With Process Designer
 - **Process Development Sessions**: Manage threads for process development conversations
-- **Streaming Integration**: Provide streaming support for real-time process writing
+- **Agent-Driven Interactions**: Route process design requests to Process Designer agents
+- **Streaming Infrastructure**: Provide streaming support for real-time agent responses
 - **Context Persistence**: Maintain conversation context across process development sessions
-- **Collaborative Editing**: Support multiple users collaborating on process development
+- **Collaborative Sessions**: Support multiple users collaborating through agent-mediated conversations
 
-### With Spy Mapper
-- **Process Analysis Sessions**: Manage threads for process mapping conversations
-- **Workflow Documentation**: Store process mapping discussions and decisions
-- **Analysis History**: Maintain history of process analysis conversations
-- **Knowledge Capture**: Capture process insights from conversations
+### Platform Infrastructure Role
+Thread Manager serves as the **pure infrastructure layer** for conversational AI:
+- **Message Persistence**: Store all conversation messages and metadata
+- **Real-time Streaming**: Provide WebSocket infrastructure for live chat
+- **Thread Organization**: Organize conversations into manageable thread structures  
+- **Action Routing**: Route user actions to appropriate agent services
+- **Response Coordination**: Coordinate streaming responses from agents back to users
 
-### With LLM Services
-- **AI Response Integration**: Integrate with LLM services for AI-generated responses
-- **Context Management**: Provide conversation context to LLM services
-- **Response Streaming**: Stream AI responses in real-time
-- **Multi-turn Conversations**: Support complex multi-turn AI conversations
+**Note**: Thread Manager does not directly interface with LLM Services or Spy Mapper. Instead, it provides the chat infrastructure that agents use to deliver AI-powered capabilities to users. Agents handle all AI logic and domain-specific processing.
+
+
 
 ## Performance Optimization
 
